@@ -44,6 +44,7 @@ from pandas import DataFrame
 from matplotlib.pyplot import Figure
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from matplotlib import interactive
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
@@ -115,11 +116,12 @@ def TreeDoubleClick(event):
         try:
             aapl_data, aapl_meta_data = ts.get_daily(symbol=script_name)
             # Not sure if we need the following line -- commenting for time being
-            # aapl_sma is a dict, aapl_meta_sma also a dict
+            # aapl_sma is a df, aapl_meta_sma also a dict
             aapl_sma, aapl_meta_sma = ti.get_sma(symbol=script_name)
+            
+
         except ValueError as error:
             msgbx.showerror("Alpha Vantage error", error)
-
 
     # get users price & date
     dict_curr_row = output_tree.item(script_name)
@@ -133,16 +135,17 @@ def TreeDoubleClick(event):
         # aapl_data['close'].plot(title=script_name)
         plt.plot(aapl_data['close'], label='Stock price')
     else:
+        
         #aapl_data['4. close'].plot(title=script_name)
         plt.plot(aapl_data['4. close'], label='Stock price')
-        plt.plot_date(aapl_sma, label='Simple Moving Avg')
+        plt.plot(aapl_sma['SMA'], label='SMA')
 
-    plt.annotate('Your price point', (mdates.datestr2num(purchase_date), float(purchase_price)),
-                    xytext=(15,15), textcoords='offset points', arrowprops=dict(arrowstyle='-|>'))
-    plt.tight_layout()
     plt.title(script_name)
     plt.xlabel('Date')
-    plt.ylabel('Closing Price')
+    plt.ylabel('Price')
+    plt.annotate('Your price point', (mdates.datestr2num(purchase_date), float(purchase_price)),
+                xytext=(15,15), textcoords='offset points', arrowprops=dict(arrowstyle='-|>'))
+    plt.tight_layout()
     plt.legend(loc='upper right')
     plt.grid()
     plt.show()
@@ -280,7 +283,7 @@ key = 'XXXX'
 
 # ts = TimeSeries(key, output_format='json')
 ts = TimeSeries(key, output_format='pandas')
-ti = TechIndicators(key)
+ti = TechIndicators(key, output_format='pandas')
 
 # Now create tkinter root object and the frame object on which we will place the other widgets
 root = Tk()
