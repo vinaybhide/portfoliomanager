@@ -48,17 +48,19 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 import warnings
 
 # Method to get current stock quote for given stock name
-def get_stock_quote(argStockName):
+def get_stock_quote(argStockName, argPrice='NA', argPurchaseDate='NA'):
     global bool_test
     dtStockQte = DataFrame()
     if bool_test:
         dtStockQte = pd.read_csv("E:\\python_projects\\TestData\\global_quote.csv")
     else:
         dtStockQte, meta_data = ts.get_quote_endpoint(argStockName)
-    heading_list=list(dtStockQte.columns[0:10])
+    dtStockQte.insert(1, 'Purchase Price', argPrice)
+    dtStockQte.insert(2, 'Purchase Date', argPurchaseDate)
+    heading_list=list(dtStockQte.columns[0:12])
     print_heading(heading_list)
     
-    values_list=list((dtStockQte.values[0:10])[0])
+    values_list=list((dtStockQte.values[0:12])[0])
     print_values(values_list)
 
 # based on the list of values create a row in TreeView
@@ -181,7 +183,7 @@ def btn_get_stock_quote():
     global bool_test
     if (len(exchange_text.get()) > 0 and len(symbol_text.get()) > 0):
         stock_name = exchange_text.get() + ':' + symbol_text.get()
-        get_stock_quote(stock_name)
+        get_stock_quote(stock_name, price_text.get(), purchasedate_text.get())
 
 # command handler for intra day
 def get_intra_day(*args):
@@ -240,7 +242,7 @@ def SavePortfolio():
     savefilehandle.close()
 
 # ******************main program starts******************
-bool_test = False
+bool_test = True
 bleftBtnReleased = False
 bleftDoubleClicked = False
 #line counter
@@ -282,6 +284,17 @@ symbol_label = ttk.Label(content, text='Enter stock symbol: ')
 symbol_text = StringVar()
 symbol_entry = ttk.Entry(content, textvariable=symbol_text, width=5)
 
+# Now create purchase price entry
+price_label = ttk.Label(content, text='Enter your purchase price: ')
+price_text = StringVar()
+price_entry = ttk.Entry(content, textvariable=price_text, width=10)
+
+# Now create purchase date entry
+purchasedate_label = ttk.Label(content, text='Enter datewhen purchased: ')
+purchasedate_text = StringVar(value='yyyy-mm-dd')
+purchasedate_entry = ttk.Entry(content, text='yyyy-mm-dd', textvariable=purchasedate_text, width=10)
+
+
 # Now create buttons to fetch respective information related to user specified stock
 btn_get_stock_qte = ttk.Button(content, text="Get Quote", command=btn_get_stock_quote)
 btn_get_intra_day = ttk.Button(content, text="Get Intra Day", command=get_intra_day)
@@ -296,6 +309,8 @@ output_tree.bind('<ButtonRelease 1>', OnLeftBtnReleased)
 #scroll bar for Tree
 vert_scroll = ttk.Scrollbar(content, orient=VERTICAL, command=output_tree.yview)
 output_tree.configure(yscrollcommand=vert_scroll.set)
+horiz_scroll = ttk.Scrollbar(content, orient=HORIZONTAL, command=output_tree.xview)
+output_tree.configure(xscrollcommand=horiz_scroll.set)
 
 # plot variable used on single & double click of TreeView row
 f = Figure(figsize=(15,6), dpi=100, facecolor='w', edgecolor='k', tight_layout=True)
@@ -309,17 +324,24 @@ exchange_label.grid(row=0, column=0, sticky=E)
 exchange_combo.grid(row=0, column=1, sticky=W)
 symbol_label.grid(row=0, column=2, sticky=E)
 symbol_entry.grid(row=0, column=3, sticky=W)
-btn_get_stock_qte.grid(row=0, column=4, padx=5, pady=5)
-btn_get_intra_day.grid(row=0, column=5, padx=5, pady=5)
-btn_get_daily_stock.grid(row=0, column=6, padx=5, pady=5)
-output_tree.grid(row=1, column=0, rowspan=1, columnspan=7, sticky=(N,E,W))
+price_label.grid(row=0, column=4, sticky=E)
+price_entry.grid(row=0, column=5, sticky=W)
+purchasedate_label.grid(row=0, column=6, sticky=E)
+purchasedate_entry.grid(row=0, column=7, sticky=W)
+
+btn_get_stock_qte.grid(row=0, column=8, padx=5, pady=5)
+btn_get_intra_day.grid(row=0, column=9, padx=5, pady=5)
+btn_get_daily_stock.grid(row=0, column=10, padx=5, pady=5)
+
+output_tree.grid(row=1, column=0, rowspan=1, columnspan=11, sticky=(N,E, W, S))
 # there is no need for below line as we are not using vertical scroll
-vert_scroll.grid(row=1, column=7, sticky=(N, E, S))
+vert_scroll.grid(row=1, column=11, sticky=(N, E, S))
+horiz_scroll.grid(row=2, column=0, columnspan=11, sticky=(N, E, W, S))
 
-output_canvas.get_tk_widget().grid(row=2, column=0, columnspan=7, sticky=(N, E, W))
+output_canvas.get_tk_widget().grid(row=3, column=0, columnspan=11, sticky=(N, E, W))
 
-toolbar_frame.grid(row=3, column=0, columnspan=7)
-toolbar.grid(row=0, column=0)
+toolbar_frame.grid(row=4, column=0, columnspan=11, sticky=(N, E, W))
+toolbar.grid(row=0, column=0, sticky=(N, W))
 
 
 # Now set the stretch options so that the widget are seen properly when window is resized
@@ -331,13 +353,18 @@ content.columnconfigure(0, weight=3)
 content.columnconfigure(1, weight=3)
 content.columnconfigure(2, weight=3)
 content.columnconfigure(3, weight=3)
-content.columnconfigure(4, weight=1)
-content.columnconfigure(5, weight=1)
-content.columnconfigure(6, weight=1)
+content.columnconfigure(4, weight=3)
+content.columnconfigure(5, weight=3)
+content.columnconfigure(6, weight=3)
+content.columnconfigure(7, weight=3)
+content.columnconfigure(8, weight=1)
+content.columnconfigure(9, weight=1)
+content.columnconfigure(10, weight=1)
 
 # this will also take care of vertical resize, where we want the text box to be expanded
-content.rowconfigure(1, weight=1)
-content.rowconfigure(2, weight=1)
-# content.rowconfigure(3, weight=1)
+# content.rowconfigure(1, weight=1) #tree
+# content.rowconfigure(2, weight=1) #horiz scrl
+# content.rowconfigure(3, weight=1) #canvas
+# content.rowconfigure(4, weight=1) #frame for toolbar
 
 mainloop()
