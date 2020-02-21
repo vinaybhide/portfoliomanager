@@ -160,7 +160,12 @@ def TreeSingleClick(event):
             f.clear()
             f.add_subplot(111).plot(aapl_data['4. close'])
             msgbx.showwarning("Plot waring", w)
+    output_canvas.set_window_title(script_name)
+    # toolbar=NavigationToolbar2Tk(output_canvas, output_canvas.get_tk_widget())
     output_canvas.draw()
+    toolbar.update()
+
+
 
 # when a new portfolio is to be loaded this method will clear existing data and
 # reset the global variables
@@ -293,8 +298,11 @@ vert_scroll = ttk.Scrollbar(content, orient=VERTICAL, command=output_tree.yview)
 output_tree.configure(yscrollcommand=vert_scroll.set)
 
 # plot variable used on single & double click of TreeView row
-f = Figure(figsize=(5,5), dpi=100)
+f = Figure(figsize=(15,6), dpi=100, facecolor='w', edgecolor='k', tight_layout=True)
+f.legend()
 output_canvas=FigureCanvasTkAgg(f, master=content)
+toolbar_frame=Frame(master=root)
+toolbar = NavigationToolbar2Tk(output_canvas, toolbar_frame)
 
 # Now put all this on grid
 exchange_label.grid(row=0, column=0, sticky=E)
@@ -306,8 +314,13 @@ btn_get_intra_day.grid(row=0, column=5, padx=5, pady=5)
 btn_get_daily_stock.grid(row=0, column=6, padx=5, pady=5)
 output_tree.grid(row=1, column=0, rowspan=1, columnspan=7, sticky=(N,E,W))
 # there is no need for below line as we are not using vertical scroll
-vert_scroll.grid(row=1, column=7, rowspan=1, sticky=(N, E, S))
+vert_scroll.grid(row=1, column=7, sticky=(N, E, S))
+
 output_canvas.get_tk_widget().grid(row=2, column=0, columnspan=7, sticky=(N, E, W))
+
+toolbar_frame.grid(row=3, column=0, columnspan=7)
+toolbar.grid(row=0, column=0)
+
 
 # Now set the stretch options so that the widget are seen properly when window is resized
 root.columnconfigure(0, weight=1)
@@ -325,6 +338,6 @@ content.columnconfigure(6, weight=1)
 # this will also take care of vertical resize, where we want the text box to be expanded
 content.rowconfigure(1, weight=1)
 content.rowconfigure(2, weight=1)
-content.rowconfigure(3, weight=1)
+# content.rowconfigure(3, weight=1)
 
 mainloop()
