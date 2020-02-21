@@ -43,6 +43,8 @@ import pandas as pd
 from pandas import DataFrame
 from matplotlib.pyplot import Figure
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 import warnings
@@ -106,28 +108,42 @@ def TreeDoubleClick(event):
     except IndexError:
         return
     script_name = output_tree.item(item, "text")
-    
+
     if bool_test:
         aapl_data = pd.read_csv("E:\\python_projects\\TestData\\daily_MSFT.csv")
     else:
         try:
             aapl_data, aapl_meta_data = ts.get_daily(symbol=script_name)
+            # Not sure if we need the following line -- commenting for time being
+            # aapl_sma is a dict, aapl_meta_sma also a dict
+            aapl_sma, aapl_meta_sma = ti.get_sma(symbol=script_name)
         except ValueError as error:
             msgbx.showerror("Alpha Vantage error", error)
 
-    # Not sure if we need the following line -- commenting for time being
-    # aapl_sma is a dict, aapl_meta_sma also a dict
-    # aapl_sma, aapl_meta_sma = ti.get_sma(symbol=script_name)
 
+    # get users price & date
+    dict_curr_row = output_tree.item(script_name)
+    purchase_price = dict_curr_row['values'][1]
+    purchase_date =  dict_curr_row['values'][2]
+    
     # Visualization
     f_temp=Figure(figsize=(15, 6), dpi=80, facecolor='w', edgecolor='k')
 
     if(bool_test):
-        aapl_data['close'].plot(title=script_name)
+        # aapl_data['close'].plot(title=script_name)
+        plt.plot(aapl_data['close'], label='Stock price')
     else:
-        aapl_data['4. close'].plot(title=script_name)
+        #aapl_data['4. close'].plot(title=script_name)
+        plt.plot(aapl_data['4. close'], label='Stock price')
+        plt.plot_date(aapl_sma, label='Simple Moving Avg')
 
+    plt.annotate('Your price point', (mdates.datestr2num(purchase_date), float(purchase_price)),
+                    xytext=(15,15), textcoords='offset points', arrowprops=dict(arrowstyle='-|>'))
     plt.tight_layout()
+    plt.title(script_name)
+    plt.xlabel('Date')
+    plt.ylabel('Closing Price')
+    plt.legend(loc='upper right')
     plt.grid()
     plt.show()
 
@@ -156,18 +172,17 @@ def TreeSingleClick(event):
     # Visualization
     if bool_test:
         f.add_subplot(111).plot(aapl_data['close'])
+        
     else:
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             f.clear()
             f.add_subplot(111).plot(aapl_data['4. close'])
-            msgbx.showwarning("Plot waring", w)
+            # msgbx.showwarning("Plot waring", w)
     output_canvas.set_window_title(script_name)
     # toolbar=NavigationToolbar2Tk(output_canvas, output_canvas.get_tk_widget())
     output_canvas.draw()
     toolbar.update()
-
-
 
 # when a new portfolio is to be loaded this method will clear existing data and
 # reset the global variables
@@ -177,6 +192,8 @@ def resetExisting():
     output_tree.delete(*output_tree.get_children())
     if (output_counter > 0):
         output_counter = 1
+
+        output_counter
 
 # command handler for stock quote button
 def btn_get_stock_quote():
@@ -224,13 +241,19 @@ def callSingleDoubleClick(event):
 
 # File open menu handler
 def OpenPortfolio():
+    global output_counter
     openfilehandle=askopenfile('r', initialdir = "/", title = "Open portfolio file to load portfolio",filetypes = (("csv files","*.csv"),("all files","*.*")) )
     if openfilehandle is not None:
         list_scripts=openfilehandle.readlines()
         openfilehandle.close()
         resetExisting()
         for script in list_scripts:
-            get_stock_quote(script[:-1])    # -1 to remove the last \n
+            # -1 to remove the last '\n' and then split the string by ','
+            arg_list=str(script[:-1]).split(',')
+            if(len(arg_list) == 3):
+                get_stock_quote(str(arg_list[0]), str(arg_list[1]), str(arg_list[2]))    
+            else:
+                msgbx.showerror("Open portfolio", "Error->Input file not in correct format." +"\n" + "Each line must be in the format of ScriptName,PurchasePrice,PurchaseDate")
         
 # File save menu handler
 def SavePortfolio():
@@ -238,11 +261,14 @@ def SavePortfolio():
     # savefilehandle = open(savefilename, 'w')
     scripttowrite = output_tree.get_children()
     for script in scripttowrite: 
-        savefilehandle.writelines(str(script) +'\n')
+        dict_curr_row = output_tree.item(script)
+        purchase_price = dict_curr_row['values'][1]
+        purchase_date =  dict_curr_row['values'][2]
+        savefilehandle.writelines(str(script)+','+purchase_price+','+purchase_date+'\n')
     savefilehandle.close()
 
 # ******************main program starts******************
-bool_test = True
+bool_test = False
 bleftBtnReleased = False
 bleftDoubleClicked = False
 #line counter
