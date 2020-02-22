@@ -45,10 +45,14 @@ from matplotlib.pyplot import Figure
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib import interactive
-
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-
 import warnings
+from datetime import date
+
+bool_test = True
+bleftBtnReleased = False
+bleftDoubleClicked = False
+output_counter = 0
 
 # Method to get current stock quote for given stock name
 def get_stock_quote(argStockName, argPrice='NA', argPurchaseDate='NA'):
@@ -57,7 +61,10 @@ def get_stock_quote(argStockName, argPrice='NA', argPurchaseDate='NA'):
     if bool_test:
         dtStockQte = pd.read_csv("E:\\python_projects\\TestData\\global_quote.csv")
     else:
-        dtStockQte, meta_data = ts.get_quote_endpoint(argStockName)
+        try:
+            dtStockQte, meta_data = ts.get_quote_endpoint(argStockName)
+        except ValueError as error:
+            msgbx.showerror("Alpha Vantage error", error)
     dtStockQte.insert(1, 'Purchase Price', argPrice)
     dtStockQte.insert(2, 'Purchase Date', argPurchaseDate)
     heading_list=list(dtStockQte.columns[0:12])
@@ -81,7 +88,6 @@ def print_values(arg_values_list):
                 i += 1
         output_tree.selection_set(iid_str)
         output_tree.focus(iid_str)
-
     output_counter += 1
 
 # Method that creates columns in TreeView
@@ -145,8 +151,9 @@ def TreeDoubleClick(event):
     plt.ylabel('Price')
     plt.annotate('Your price point', (mdates.datestr2num(purchase_date), float(purchase_price)),
                 xytext=(15,15), textcoords='offset points', arrowprops=dict(arrowstyle='-|>'))
+    plt.axhline(float(purchase_price), color='y') # will draw a horizontal line at purchase price
     plt.tight_layout()
-    plt.legend(loc='upper right')
+    plt.legend(loc='upper left')
     plt.grid()
     plt.show()
 
@@ -174,29 +181,39 @@ def TreeSingleClick(event):
 
     # Visualization
     if bool_test:
-        f.add_subplot(111).plot(aapl_data['close'])
-        
+        f.clear()
+        f.add_subplot(111, title=script_name, label='Daily close price', 
+            xlabel='Date', ylabel='Closing price').plot(aapl_data['close'], label='Daily closing price')
     else:
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             f.clear()
-            f.add_subplot(111).plot(aapl_data['4. close'])
+            f.add_subplot(111, title=script_name, label='Daily close price', 
+                xlabel='Date', ylabel='Closing price').plot(aapl_data['4. close'], label='Daily closing price')
             # msgbx.showwarning("Plot waring", w)
+
+    # f.suptitle(script_name)
+    f.tight_layout()
+    # f.set_label('Daily price seriese')
+    f.legend(loc='upper right')
+
     output_canvas.set_window_title(script_name)
     # toolbar=NavigationToolbar2Tk(output_canvas, output_canvas.get_tk_widget())
     output_canvas.draw()
+    
     toolbar.update()
 
 # when a new portfolio is to be loaded this method will clear existing data and
 # reset the global variables
+
 def resetExisting():
     global output_counter
     # delete existing tree items
     output_tree.delete(*output_tree.get_children())
-    if (output_counter > 0):
+    f.clear()
+    if(output_counter > 0):
         output_counter = 1
-
-        output_counter
+        
 
 # command handler for stock quote button
 def btn_get_stock_quote():
@@ -216,6 +233,24 @@ def get_daily_stock(*args):
 # mouse click event handlers for TreeView - we want to make sure that both single & double clicks are handled
 # On single click we will show the Plot within main window
 # on double click we will use Matplot lib and show detail plot
+
+def OnRightClick(event):
+    try:
+        item = output_tree.identify_row(event.y)
+        # item=output_tree.selection()[0]
+    except IndexError:
+        return
+    script_name = output_tree.item(item, "text")
+
+    try:
+        if(msgbx.askyesno('Delete script', 'Are you sure you want to delete: '+ script_name + '?')):
+            output_tree.delete(item)
+    except Exception as e:
+        msgbx.showerror('Delete Error', "Selected entry could not be deleted due to error:-" + e)
+        return
+    msgbx.showinfo('Delete Script', "Selected entry deleted successfully. Please make sure to save updated portfolio!")
+
+
 
 def OnLeftBtnReleased(event):
     global bleftBtnReleased
@@ -244,7 +279,6 @@ def callSingleDoubleClick(event):
 
 # File open menu handler
 def OpenPortfolio():
-    global output_counter
     openfilehandle=askopenfile('r', initialdir = "/", title = "Open portfolio file to load portfolio",filetypes = (("csv files","*.csv"),("all files","*.*")) )
     if openfilehandle is not None:
         list_scripts=openfilehandle.readlines()
@@ -271,12 +305,6 @@ def SavePortfolio():
     savefilehandle.close()
 
 # ******************main program starts******************
-bool_test = False
-bleftBtnReleased = False
-bleftDoubleClicked = False
-#line counter
-output_counter = 0
-
 # Set Alpha Vantage key and create timeseriese and time indicator objects
 key = 'XXXX'
 # get your key from https://www.alphavantage.co/support/#api-key
@@ -315,12 +343,13 @@ symbol_entry = ttk.Entry(content, textvariable=symbol_text, width=5)
 
 # Now create purchase price entry
 price_label = ttk.Label(content, text='Enter your purchase price: ')
-price_text = StringVar()
+price_text = StringVar(value='0.00')
 price_entry = ttk.Entry(content, textvariable=price_text, width=10)
 
 # Now create purchase date entry
-purchasedate_label = ttk.Label(content, text='Enter datewhen purchased: ')
-purchasedate_text = StringVar(value='yyyy-mm-dd')
+purchasedate_label = ttk.Label(content, text='Enter date of purchase: ')
+
+purchasedate_text = StringVar(value=date.today())
 purchasedate_entry = ttk.Entry(content, text='yyyy-mm-dd', textvariable=purchasedate_text, width=10)
 
 
@@ -334,6 +363,7 @@ output_tree = ttk.Treeview(content, selectmode='browse')
 output_tree.bind('<Double 1>', OnTreeDoubleClick)
 output_tree.bind('<Button 1>', OnTreeSingleClick)
 output_tree.bind('<ButtonRelease 1>', OnLeftBtnReleased)
+output_tree.bind('<Button-3>', OnRightClick)
 
 #scroll bar for Tree
 vert_scroll = ttk.Scrollbar(content, orient=VERTICAL, command=output_tree.yview)
@@ -343,7 +373,6 @@ output_tree.configure(xscrollcommand=horiz_scroll.set)
 
 # plot variable used on single & double click of TreeView row
 f = Figure(figsize=(15,6), dpi=100, facecolor='w', edgecolor='k', tight_layout=True)
-f.legend()
 output_canvas=FigureCanvasTkAgg(f, master=content)
 toolbar_frame=Frame(master=root)
 toolbar = NavigationToolbar2Tk(output_canvas, toolbar_frame)
