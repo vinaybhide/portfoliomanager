@@ -18,7 +18,6 @@ from datetime import date
 
 from ScriptTree import *
 
-
 class PortfolioManager:
     def __init__(self):
         super().__init__()
@@ -62,8 +61,8 @@ class PortfolioManager:
 
         # add script analysis menu
         self.analyze_menu=Menu(self.menu, tearoff=0)
-        self.analyze_menu.add_command(label="Daily price series", command=self.GetDailyTimeSeries)
-        self.analyze_menu.add_command(label="Compare price Vs SMA", command=self.ComparePriceSMA)
+        self.analyze_menu.add_command(label="Daily price series", command=self.menuGetDailyTimeSeries)
+        self.analyze_menu.add_command(label="Compare price Vs SMA", command=self.menuComparePriceSMA)
         self.menu.add_cascade(label='Analyze Scripts', menu=self.analyze_menu)
 
         # add help menu
@@ -77,14 +76,12 @@ class PortfolioManager:
         self.toolbar_frame=Frame(master=self.root)
         self.toolbar = NavigationToolbar2Tk(self.output_canvas, self.toolbar_frame)
 
-        self.output_tree = ScriptTreeView(self.content, self.ts, self.ti, self.f, self.bool_test, self.output_canvas, self.toolbar,
-                    selectmode='browse')
-        
-        #self.output_tree.bind('<Double 1>', self.output_tree.OnTreeDoubleClick)
-        #self.output_tree.bind('<Button 1>', self.output_tree.OnTreeSingleClick)
-        #self.output_tree.bind('<ButtonRelease 1>', self.output_tree.OnLeftBtnReleased)
-        #self.output_tree.bind('<Button-3>', self.output_tree.OnRightClick)
+        self.output_tree = ScriptTreeView(self.content, self.ts, self.ti, self.f, self.bool_test, self.output_canvas, self.toolbar, selectmode='browse')
 
+        self.popup_menu_righclick = Menu(self.menu, tearoff=0)
+        self.popup_menu_righclick.add_command(label="Delete Script", command=self.DeleteSelectedScript)
+        self.popup_menu_righclick.add_command(label="Refresh Data", command=self.RefreshScriptData)
+        self.output_tree.bind('<Button-3>', self.OnRightClick)
 
         # Now create exchange label and combo box to show exchange along with associated text variable to hold selection
         self.exchange_label = ttk.Label(self.content, text='Select Exchange: ')
@@ -221,7 +218,7 @@ class PortfolioManager:
         #global output_counter
         # delete existing tree items
         self.output_tree.delete(*self.output_tree.get_children())
-        self.f.clear()
+        self.f.clf()
         if(self.output_counter > 0):
             self.output_counter = 1
 
@@ -230,6 +227,8 @@ class PortfolioManager:
         if (len(self.exchange_text.get()) > 0 and len(self.symbol_text.get()) > 0):
             stock_name = self.exchange_text.get() + ':' + self.symbol_text.get()
             self.get_stock_quote(stock_name, self.price_text.get(), self.purchasedate_text.get())
+        else:
+            msgbx.showerror("Add Script", "Error: Please provide exchange and symbol")
 
     # command handler for intra day
     def get_intra_day(self, *args):
@@ -243,6 +242,8 @@ class PortfolioManager:
         if (len(self.exchange_text.get()) > 0 and len(self.symbol_text.get()) > 0):
             stock_name = self.exchange_text.get() + ':' + self.symbol_text.get()
             self.get_stock_quote(stock_name, self.price_text.get(), self.purchasedate_text.get())
+        else:
+            msgbx.showerror("Add Script", "Error: Please provide exchange and symbol")
 
     def ModifySelectedScript(self):
         return
@@ -258,12 +259,12 @@ class PortfolioManager:
             try:
                 if(msgbx.askyesno('Delete script', 'Are you sure you want to delete: '+ script_name + '?')):
                     self.output_tree.delete(item)
+                    msgbx.showinfo('Delete Script', "Selected entry deleted successfully. Please make sure to save updated portfolio!")
             except Exception as e:
                 msgbx.showerror('Delete Error', "Selected entry could not be deleted due to error:-" + str(e))
                 return
-            msgbx.showinfo('Delete Script', "Selected entry deleted successfully. Please make sure to save updated portfolio!")
 
-    def GetDailyTimeSeries(self):
+    def menuGetDailyTimeSeries(self):
             try:
                 item=self.output_tree.selection()[0]
             except IndexError:
@@ -307,7 +308,7 @@ class PortfolioManager:
             self.output_canvas.draw()
             self.toolbar.update()
 
-    def ComparePriceSMA(self):
+    def menuComparePriceSMA(self):
             try:
                 item=self.output_tree.selection()[0]
             except IndexError:
@@ -347,9 +348,10 @@ class PortfolioManager:
             plt.title(script_name)
             plt.xlabel('Date')
             plt.ylabel('Price')
-            plt.annotate('Your price point', (mdates.datestr2num(purchase_date), float(purchase_price)),
+            if ((purchase_date != '') and (purchase_price != '')):
+                plt.annotate('Your price point', (mdates.datestr2num(purchase_date), float(purchase_price)),
                         xytext=(15,15), textcoords='offset points', arrowprops=dict(arrowstyle='-|>'))
-            plt.axhline(float(purchase_price), color='y') # will draw a horizontal line at purchase price
+                plt.axhline(float(purchase_price), color='y') # will draw a horizontal line at purchase price
             plt.tight_layout()
             plt.legend(loc='upper left')
             plt.grid()
@@ -394,6 +396,50 @@ class PortfolioManager:
                 purchase_date =  dict_curr_row['values'][2]
                 savefilehandle.writelines(str(script)+','+ str(purchase_price)+','+str(purchase_date)+'\n')
             savefilehandle.close()
+
+    def RefreshScriptData(self):
+        try:
+            #scriptname = self.output_tree.selection()[0]
+            item = self.output_tree.selection()
+            dict_curr_row = self.output_tree.item(item)
+            purchase_price = dict_curr_row['values'][1]
+            purchase_date =  dict_curr_row['values'][2]
+            self.get_stock_quote(item[0], purchase_price, purchase_date)
+        except IndexError:
+            return
+
+    def OnRightClick(self, event):
+            try:
+                # first find on which row/item user clicked
+                item = self.output_tree.identify_row(event.y)
+                item2 =self.output_tree.selection()[0]
+                if (item == ''):
+                    return
+                elif (item != item2):
+                    self.output_tree.selection_set(item)
+
+                try:
+                    self.popup_menu_righclick.tk_popup(event.x_root, event.y_root, 0)
+                finally:
+                    self.popup_menu_righclick.grab_release()
+            except IndexError:
+                return
+"""     
+        try:
+            item = self.identify_row(event.y)
+            # item=output_tree.selection()[0]
+        except IndexError:
+            return
+        script_name = self.item(item, "text")
+
+        try:
+            if(msgbx.askyesno('Delete script', 'Are you sure you want to delete: '+ script_name + '?')):
+                self.delete(item)
+        except Exception as e:
+            msgbx.showerror('Delete Error', "Selected entry could not be deleted due to error:-" + e)
+            return
+        msgbx.showinfo('Delete Script', "Selected entry deleted successfully. Please make sure to save updated portfolio!") 
+"""
 
 if __name__ == "__main__":
     portfolio_manager=PortfolioManager()

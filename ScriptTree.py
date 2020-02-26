@@ -16,7 +16,7 @@ from datetime import date
 
 class ScriptTreeView(ttk.Treeview):
     def __init__(self, master=None, argTS = None, argTI = None, argFigure = None, argTestMode = None, argCanvas = None, argToolbar = None, **kw):
-        ttk.Treeview.__init__(self, master=master, **kw)
+        super().__init__(master=master, **kw)
         
         self.bleftBtnReleased = False
         self.bleftDoubleClicked = False
@@ -31,13 +31,21 @@ class ScriptTreeView(ttk.Treeview):
         self.bind('<Double 1>', self.OnTreeDoubleClick)
         self.bind('<Button 1>', self.OnTreeSingleClick)
         self.bind('<ButtonRelease 1>', self.OnLeftBtnReleased)
-        self.bind('<Button-3>', self.OnRightClick)
 
         #scroll bar for Tree
         self.vert_scroll = ttk.Scrollbar(master, orient=VERTICAL, command=self.yview)
         self.configure(yscrollcommand=self.vert_scroll.set)
         self.horiz_scroll = ttk.Scrollbar(master, orient=HORIZONTAL, command=self.xview)
         self.configure(xscrollcommand=self.horiz_scroll.set)
+    """ 
+        self.popup_menu_righclick = ttk.Menu(self, tearoff=0)
+        self.popup_menu_righclick.add_command(label="DeleteScript",
+                                    command=self.delete_selected)
+        self.popup_menu_righclick.add_command(label="Refresh Data",
+                                    command=self.RefreshScriptData)
+        self.bind('<Button-3>', self.OnRightClick)    
+    """
+
 
     def OnLeftBtnReleased(self, event):
         self.bleftBtnReleased = True
@@ -56,26 +64,13 @@ class ScriptTreeView(ttk.Treeview):
             else:
                 self.TreeSingleClick(event)
 
-    def OnRightClick(self, event):
-        try:
-            item = self.identify_row(event.y)
-            # item=output_tree.selection()[0]
-        except IndexError:
-            return
-        script_name = self.item(item, "text")
-
-        try:
-            if(msgbx.askyesno('Delete script', 'Are you sure you want to delete: '+ script_name + '?')):
-                self.delete(item)
-        except Exception as e:
-            msgbx.showerror('Delete Error', "Selected entry could not be deleted due to error:-" + e)
-            return
-        msgbx.showinfo('Delete Script', "Selected entry deleted successfully. Please make sure to save updated portfolio!")
-
     # tree view row double clicked
     def TreeDoubleClick(self, event):
         try:
             item=self.selection()[0]
+            item2 = self.identify_row(event.y)
+            if(item != item2):  #user double clicked on an item which is not currently selected
+                return
         except IndexError:
             return
         script_name = self.item(item, "text")
@@ -112,9 +107,10 @@ class ScriptTreeView(ttk.Treeview):
         plt.title(script_name)
         plt.xlabel('Date')
         plt.ylabel('Price')
-        plt.annotate('Your price point', (mdates.datestr2num(purchase_date), float(purchase_price)),
+        if ((purchase_date != '') and (purchase_price != '')):
+            plt.annotate('Your price point', (mdates.datestr2num(purchase_date), float(purchase_price)),
                     xytext=(15,15), textcoords='offset points', arrowprops=dict(arrowstyle='-|>'))
-        plt.axhline(float(purchase_price), color='y') # will draw a horizontal line at purchase price
+            plt.axhline(float(purchase_price), color='y') # will draw a horizontal line at purchase price
         plt.tight_layout()
         plt.legend(loc='upper left')
         plt.grid()
@@ -124,6 +120,9 @@ class ScriptTreeView(ttk.Treeview):
     def TreeSingleClick(self, event):
         try:
             item=self.selection()[0]
+            item2 = self.identify_row(event.y)
+            if(item != item2):  #user clicked on an item which is not currently selected
+                return
         except IndexError:
             return
         script_name = self.item(item, "text")
