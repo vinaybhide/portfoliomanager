@@ -17,6 +17,7 @@ import warnings
 from datetime import date
 
 from ScriptTree import *
+from addnewscript import *
 
 class PortfolioManager:
     def __init__(self):
@@ -61,6 +62,10 @@ class PortfolioManager:
 
         # add script analysis menu
         self.analyze_menu=Menu(self.menu, tearoff=0)
+        self.analyze_menu.add_command(label="Get Quote", command=self.menuGetStockQuote)
+        self.analyze_menu.add_command(label="Get Intra Day", command=self.menuGetIntraDay)
+        self.analyze_menu.add_command(label="Get Daily Stock", command=self.menuDailyStock)
+        self.analyze_menu.add_separator()
         self.analyze_menu.add_command(label="Daily price series", command=self.menuGetDailyTimeSeries)
         self.analyze_menu.add_command(label="Compare price Vs SMA", command=self.menuComparePriceSMA)
         self.menu.add_cascade(label='Analyze Scripts', menu=self.analyze_menu)
@@ -83,6 +88,8 @@ class PortfolioManager:
         self.popup_menu_righclick.add_command(label="Refresh Data", command=self.RefreshScriptData)
         self.output_tree.bind('<Button-3>', self.OnRightClick)
 
+
+        """ commenting as this is moved to popup add new script
         # Now create exchange label and combo box to show exchange along with associated text variable to hold selection
         self.exchange_label = ttk.Label(self.content, text='Select Exchange: ')
         self.exchange_text = StringVar()
@@ -104,11 +111,6 @@ class PortfolioManager:
         self.purchasedate_text = StringVar(value=date.today())
         self.purchasedate_entry = ttk.Entry(self.content, text='yyyy-mm-dd', textvariable=self.purchasedate_text, width=10)
 
-        # Now create buttons to fetch respective information related to user specified stock
-        self.btn_get_stock_qte = ttk.Button(self.content, text="Get Quote", command=self.btn_get_stock_quote)
-        self.btn_get_intra_day = ttk.Button(self.content, text="Get Intra Day", command=self.get_intra_day)
-        self.btn_get_daily_stock = ttk.Button(self.content, text="Get Daily Stock", command=self.get_daily_stock)
-
         # Now put all this on grid
         self.exchange_label.grid(row=0, column=0, sticky=E)
         self.exchange_combo.grid(row=0, column=1, sticky=W)
@@ -118,19 +120,16 @@ class PortfolioManager:
         self.price_entry.grid(row=0, column=5, sticky=W)
         self.purchasedate_label.grid(row=0, column=6, sticky=E)
         self.purchasedate_entry.grid(row=0, column=7, sticky=W)
+        """
 
-        self.btn_get_stock_qte.grid(row=0, column=8, padx=5, pady=5)
-        self.btn_get_intra_day.grid(row=0, column=9, padx=5, pady=5)
-        self.btn_get_daily_stock.grid(row=0, column=10, padx=5, pady=5)
-
-        self.output_tree.grid(row=1, column=0, rowspan=1, columnspan=11, sticky=(N,E, W, S))
+        self.output_tree.grid(row=0, column=0, rowspan=1, columnspan=11, sticky=(N,E, W, S))
         
-        self.output_tree.vert_scroll.grid(row=1, column=11, sticky=(N, E, S))
-        self.output_tree.horiz_scroll.grid(row=2, column=0, columnspan=11, sticky=(N, E, W, S))
+        self.output_tree.vert_scroll.grid(row=0, column=11, sticky=(N, E, S))
+        self.output_tree.horiz_scroll.grid(row=1, column=0, columnspan=11, sticky=(N, E, W, S))
 
-        self.output_canvas.get_tk_widget().grid(row=3, column=0, columnspan=11, sticky=(N, E, W))
+        self.output_canvas.get_tk_widget().grid(row=2, column=0, columnspan=11, sticky=(N, E, W))
 
-        self.toolbar_frame.grid(row=4, column=0, columnspan=11, sticky=(N, E, W))
+        self.toolbar_frame.grid(row=3, column=0, columnspan=11, sticky=(N, E, W))
         self.toolbar.grid(row=0, column=0, sticky=(N, W))
 
 
@@ -139,7 +138,7 @@ class PortfolioManager:
         self.root.rowconfigure(0, weight=1)
         self.content.columnconfigure(0, weight=1)
 
-        self.content.columnconfigure(0, weight=3)
+        """self.content.columnconfigure(0, weight=3)
         self.content.columnconfigure(1, weight=3)
         self.content.columnconfigure(2, weight=3)
         self.content.columnconfigure(3, weight=3)
@@ -150,18 +149,14 @@ class PortfolioManager:
         self.content.columnconfigure(8, weight=1)
         self.content.columnconfigure(9, weight=1)
         self.content.columnconfigure(10, weight=1)
-
-        # this will also take care of vertical resize, where we want the text box to be expanded
-        # content.rowconfigure(1, weight=1) #tree
-        # content.rowconfigure(2, weight=1) #horiz scrl
-        # content.rowconfigure(3, weight=1) #canvas
-        # content.rowconfigure(4, weight=1) #frame for toolbar
+        """
 
         mainloop()
 
 
     # Method to get current stock quote for given stock name
-    def get_stock_quote(self, argStockName, argPrice='NA', argPurchaseDate='NA'):
+    def get_stock_quote(self, argStockName, argPrice='NA', argPurchaseDate='NA', 
+                        argQuantity='NA', argCommission='NA', argCost='NA'):
         #global bool_test
         dfstockname = DataFrame()
         if self.bool_test:
@@ -169,15 +164,34 @@ class PortfolioManager:
         else:
             try:
                 dfstockname, meta_data = self.ts.get_quote_endpoint(argStockName)
+                currclosingprice = float(dfstockname.values[0][4])
+                status = ''
+                currentvalue=0.00
+                if((len(argQuantity) > 0) and (len(argCost) > 0)):
+                    currentvalue = currclosingprice * float(argQuantity)
+                    if(currentvalue > float(argCost)):
+                        status = '↑'
+                    elif (currentvalue < float(argCost)):
+                        status = '↓'
+                    elif (currentvalue == float(argCost)):
+                        status = '↔'
             except ValueError as error:
                 msgbx.showerror("Alpha Vantage error", error)
                 return
         dfstockname.insert(1, 'Purchase Price', argPrice)
         dfstockname.insert(2, 'Purchase Date', argPurchaseDate)
-        heading_list=list(dfstockname.columns[0:12])
+        dfstockname.insert(3, 'Purchase Quantity', argQuantity)
+        dfstockname.insert(4, 'Commission Paid', argCommission)
+        dfstockname.insert(5, 'Cost of Investment', argCost)
+        dfstockname.insert(6, 'Current Value', str(currentvalue))
+        dfstockname.insert(7, 'Status', status) #alt 24 ↑, alt 25 ↓, alt 29 ↔
+        dfcolumnlen = len(dfstockname.columns)
+        #heading_list=list(dfstockname.columns[0:12])
+        heading_list=list(dfstockname.columns[0:dfcolumnlen])
         self.print_heading(heading_list)
         
-        values_list=list((dfstockname.values[0:12])[0])
+        #values_list=list((dfstockname.values[0:12])[0])
+        values_list=list((dfstockname.values[0:dfcolumnlen])[0])
         self.print_values(values_list)
 
     # based on the list of values create a row in TreeView
@@ -209,9 +223,9 @@ class PortfolioManager:
             self.output_tree.column("#0", width=100, anchor='center')
             self.output_tree.heading("#0", text='Script', anchor='center')
             for each_column in arg_heading_list:
-                column_str = str(each_column)
-                column_str = column_str[4:]
-                self.output_tree.column(str(each_column), width=100, anchor='center')
+                #column_str = str(each_column)
+                #column_str = column_str[4:]
+                self.output_tree.column(str(each_column), width=60, anchor='center')
                 self.output_tree.heading(str(each_column), text=str(each_column), anchor='center')
 
     def resetExisting(self):
@@ -223,25 +237,26 @@ class PortfolioManager:
             self.output_counter = 1
 
     # command handler for stock quote button
-    def btn_get_stock_quote(self):
-        if (len(self.exchange_text.get()) > 0 and len(self.symbol_text.get()) > 0):
-            stock_name = self.exchange_text.get() + ':' + self.symbol_text.get()
-            self.get_stock_quote(stock_name, self.price_text.get(), self.purchasedate_text.get())
-        else:
-            msgbx.showerror("Add Script", "Error: Please provide exchange and symbol")
+    def menuGetStockQuote(self):
+        return;
 
     # command handler for intra day
-    def get_intra_day(self, *args):
+    def menuGetIntraDay(self):
         return True
 
     # command handler for daily stock
-    def get_daily_stock(self, *args):
+    def menuDailyStock(self):
         return True
 
     def AddScript(self):
-        if (len(self.exchange_text.get()) > 0 and len(self.symbol_text.get()) > 0):
-            stock_name = self.exchange_text.get() + ':' + self.symbol_text.get()
-            self.get_stock_quote(stock_name, self.price_text.get(), self.purchasedate_text.get())
+        dnewscript = dict()
+        dnewscript = classAddNewScript(master=self.content).show()
+        # returns dictionary - {'Exchange': 'BSE', 'Symbol': 'LT', 'Price': '1000', 'Date': '2020-02-22', 'Quantity': '10', 'Commission': '1', 'Cost': '10001.0'}
+
+        if(len(dnewscript['Exchange'])) > 0 and (len(dnewscript['Symbol']) >0):
+            stock_name = dnewscript['Exchange'] + ':' + dnewscript['Symbol']
+            self.get_stock_quote(stock_name, dnewscript['Price'], dnewscript['Date'], 
+                dnewscript['Quantity'], dnewscript['Commission'], dnewscript['Cost'])
         else:
             msgbx.showerror("Add Script", "Error: Please provide exchange and symbol")
 
@@ -379,8 +394,9 @@ class PortfolioManager:
                 for script in list_scripts:
                     # -1 to remove the last '\n' and then split the string by ','
                     arg_list=str(script[:-1]).split(',')
-                    if(len(arg_list) == 3):
-                        self.get_stock_quote(str(arg_list[0]), str(arg_list[1]), str(arg_list[2]))    
+                    if(len(arg_list) == 6):
+                        self.get_stock_quote(str(arg_list[0]), str(arg_list[1]), str(arg_list[2]),
+                        str(arg_list[3]), str(arg_list[4]), str(arg_list[5]))    
                     else:
                         msgbx.showerror("Open portfolio", "Error->Input file not in correct format." +"\n" + "Each line must be in the format of ScriptName,PurchasePrice,PurchaseDate")
                         return
@@ -394,7 +410,12 @@ class PortfolioManager:
                 dict_curr_row = self.output_tree.item(script)
                 purchase_price = dict_curr_row['values'][1]
                 purchase_date =  dict_curr_row['values'][2]
-                savefilehandle.writelines(str(script)+','+ str(purchase_price)+','+str(purchase_date)+'\n')
+                purchase_quantity = dict_curr_row['values'][3]
+                commission_paid = dict_curr_row['values'][4]
+                investment_cost = dict_curr_row['values'][5]
+
+                savefilehandle.writelines(str(script)+','+ str(purchase_price)+','+str(purchase_date)+','+
+                    str(purchase_quantity) + ',' + str(commission_paid) + ',' + str(investment_cost) +'\n')
             savefilehandle.close()
 
     def RefreshScriptData(self):
@@ -404,7 +425,11 @@ class PortfolioManager:
             dict_curr_row = self.output_tree.item(item)
             purchase_price = dict_curr_row['values'][1]
             purchase_date =  dict_curr_row['values'][2]
-            self.get_stock_quote(item[0], purchase_price, purchase_date)
+            purchase_quantity = dict_curr_row['values'][3]
+            commission_paid = dict_curr_row['values'][4]
+            investment_cost = dict_curr_row['values'][5]
+            self.get_stock_quote(item[0], purchase_price, purchase_date, purchase_quantity,
+                    commission_paid, investment_cost)
         except IndexError:
             return
 
