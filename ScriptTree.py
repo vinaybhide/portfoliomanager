@@ -20,6 +20,7 @@ class ScriptTreeView(ttk.Treeview):
         
         self.bleftBtnReleased = False
         self.bleftDoubleClicked = False
+        self.output_counter = 0
         self.ts = argTS
         self.ti = argTI
         self.f = argFigure
@@ -28,24 +29,15 @@ class ScriptTreeView(ttk.Treeview):
         self.btestmode = argTestMode
 
         #self.script_tree = ttk.Treeview(master, selectmode='browse')
-        self.bind('<Double 1>', self.OnTreeDoubleClick)
-        self.bind('<Button 1>', self.OnTreeSingleClick)
-        self.bind('<ButtonRelease 1>', self.OnLeftBtnReleased)
+        #self.bind('<Double 1>', self.OnTreeDoubleClick)
+        #self.bind('<Button 1>', self.OnTreeSingleClick)
+        #self.bind('<ButtonRelease 1>', self.OnLeftBtnReleased)
 
         #scroll bar for Tree
         self.vert_scroll = ttk.Scrollbar(master, orient=VERTICAL, command=self.yview)
         self.configure(yscrollcommand=self.vert_scroll.set)
         self.horiz_scroll = ttk.Scrollbar(master, orient=HORIZONTAL, command=self.xview)
         self.configure(xscrollcommand=self.horiz_scroll.set)
-    """ 
-        self.popup_menu_righclick = ttk.Menu(self, tearoff=0)
-        self.popup_menu_righclick.add_command(label="DeleteScript",
-                                    command=self.delete_selected)
-        self.popup_menu_righclick.add_command(label="Refresh Data",
-                                    command=self.RefreshScriptData)
-        self.bind('<Button-3>', self.OnRightClick)    
-    """
-
 
     def OnLeftBtnReleased(self, event):
         self.bleftBtnReleased = True
@@ -163,3 +155,163 @@ class ScriptTreeView(ttk.Treeview):
         # toolbar=NavigationToolbar2Tk(output_canvas, output_canvas.get_tk_widget())
         self.graph_canvas.draw()
         self.graph_toolbar.update()
+
+    def update_currentval(self, listmarketValues, listrowValues, rowid):
+        status = ''
+        closingprice = float(listmarketValues[4])
+        currentvalue=0.00
+        if((len(listrowValues[2]) > 0) and (len(listrowValues[4]) > 0)):
+            currentvalue = closingprice * float(listrowValues[2])
+            if(currentvalue > float(listrowValues[4])):
+                status = '↑'
+            elif (currentvalue < float(listrowValues[4])):
+                status = '↓'
+            elif (currentvalue == float(listrowValues[4])):
+                status = '↔'
+            self.set(rowid, column=6, value=str(currentvalue))
+            self.set(rowid, column=7, value=status)
+
+    def print_values(self, arg_heading_list, arg_values_list, arg_self_col_list, arg_self_val_list, counter):
+        self.output_counter = counter
+        if(self.output_counter>0):
+            # now insert the data in tree
+            iid_str = str(arg_values_list[0])
+            if self.exists(iid_str) == True:
+                #self.insert('', 'end', iid=iid_str, text=str(arg_values_list[0]), values=arg_values_list)
+                #we have to find the last HOLDINGVAL iid
+                childrows = self.get_children(iid_str)
+                holdingctr = 1
+
+                # first get the current closing price
+                
+                for child in childrows:
+                        # now get  rows values only for self holding, we will not store market data
+                    if(str(child).upper().find('HOLDINGVAL') >= 0):
+                        holdingctr +=1
+                        row_val = self.item(child, 'values')
+                        self.update_currentval(arg_values_list, row_val, child)
+
+                if((holdingctr >= 1) and (self.isValidHoldingRecord(arg_self_col_list, arg_self_val_list))):
+                    #now insert the self data
+                    curr_iid = iid_str + '_HOLDINGVAL' + str(holdingctr)
+                    idcol = self.insert(iid_str, "end", iid = curr_iid,text='')
+                    for colid in range(len(arg_self_val_list)):
+                        self.set(idcol, column=colid+1, value=arg_self_val_list[colid])
+            else:   # update an existing item with new column values
+                 #first enter the script name as the 0 column content
+                self.insert('', 'end', iid=iid_str, text=str(arg_values_list[0]))
+
+                #now insert the column for alpha
+                idcol = self.insert(iid_str, "end", iid=iid_str+'_MARKETCOL' ,text='From Market')
+                for colid in range(len(arg_heading_list)):
+                    self.set(idcol, column=colid+1, value=arg_heading_list[colid])
+
+                #now insert the market data from alpha
+                idcol = self.insert(iid_str, "end", iid= iid_str + '_MARKETVAL',text='')
+                for colid in range(len(arg_values_list)):
+                    self.set(idcol, column=colid+1, value=arg_values_list[colid])
+
+                #now insert the column for self
+                idcol = self.insert(iid_str, "end", iid = iid_str + '_HOLDINGCOL', text='Your holdings')
+                for colid in range(len(arg_self_col_list)):
+                    self.set(idcol, column=colid+1, value=arg_self_col_list[colid])
+
+                #now insert the self data
+                idcol = self.insert(iid_str, "end", iid = iid_str + '_HOLDINGVAL1',text='')
+                for colid in range(len(arg_self_val_list)):
+                    self.set(idcol, column=colid+1, value=arg_self_val_list[colid])
+
+            self.focus(iid_str)
+            self.selection_set(iid_str)
+        self.output_counter += 1
+        return self.output_counter
+
+    # Method that creates columns in TreeView
+    def print_heading(self, columnlen, counter):
+        # get the column headings
+        #global output_counter
+        self.output_counter = counter
+        if(self.output_counter==0):
+            self.output_counter += 1
+            self.column("#0", width=100, anchor='center')
+            self.heading("#0", text='Script', anchor='center')
+            self["columns"] = list(range(1, columnlen+1))
+            for eachcol in range(1, columnlen+1):
+                self.column(str(eachcol), width=100, anchor='center')
+                self.heading(str(eachcol), text="", anchor='center')
+
+        return self.output_counter
+    
+    """method - get_parent_item
+        returns the parent item id of the selected item.
+        if the selected item is child then will get its parent iid and return the same
+        if the selected item is parent then it will return the same
+        if no item is selected it will return ''  """
+    def get_parent_item(self, argitem = None):
+        try:
+            if(argitem == None):
+                item = self.selection()[0]
+            else:
+                item = argitem
+            parentitem = self.parent(item)
+        except IndexError:
+            return ''
+        script_name = ''
+        if(len(parentitem) <= 0):
+            script_name = self.item(item, "text")
+        else:
+            script_name = self.item(parentitem, "text")
+        return script_name
+
+    """ method - is_market_holding_col_row
+        given item or for selected item, 
+            the method will return '' if iid has MARKETCOL or HOLDINGCOL in it
+            else return the iid string
+            in case of exception will retun ''    """
+    def is_market_holding_col_row(self, argitem = None):
+        try:
+            if(argitem == None):
+                item = self.selection()[0]
+            else:
+                item = argitem
+            #script_name = self.item(item, "text")
+
+            if((item.upper().find("MARKETCOL") >= 0) or 
+                (item.upper().find("HOLDINGCOL") >= 0) or
+                (item.upper().find("MARKETVAL") >= 0)):
+                return ''
+            else:
+                return item
+        except IndexError:
+            return ''
+
+    """ method - isValidHoldingRecord
+        will return True if Purchase Price, Purchase Date, Quantity are not empty
+        else returns False """
+    def isValidHoldingRecord(self,arg_self_col_list, arg_self_val_list):
+            listindex = arg_self_col_list.index('Purchase Price')
+            sPurchasePrice = arg_self_val_list[listindex]
+            listindex = arg_self_col_list.index('Purchase Date')
+            sPurchaseDate = arg_self_val_list[listindex]
+            listindex = arg_self_col_list.index('Purchase Qty')
+            sQty = arg_self_val_list[listindex]
+            if((len(sPurchasePrice) > 0) and (len(sPurchaseDate)>0) and (len(sQty)>0)):
+                return True
+
+            return False
+
+    """ Method - selectRowOnRightClick
+        will find the row where user right clicked
+        if currently selected row & right clicked row are not the same, it will select the 
+            right clicked row"""
+    def selectRowOnRightClick(self, event=None):
+            try:
+                item = self.identify_row(event.y)
+                item2 =self.selection()[0]
+                if (item == ''): #clicked where no row exists
+                    return False
+                elif (item != item2):
+                    self.selection_set(item)
+            except Exception as e:
+                return False
+            return True

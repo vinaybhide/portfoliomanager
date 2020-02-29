@@ -73,14 +73,18 @@ class classAddNewScript(Toplevel):
         self.btn_cancel.grid_configure(row=5, column=2, padx=5, pady=5)
 
     def btnCalculateCost(self):
-        if(len(self.commision_text.get()) == 0):
-            self.commision_text.set('0.00')
-        if( (len(self.price_text.get()) > 0) and (len(self.quantity_text.get()) > 0)):
-            self.cost = (float(self.price_text.get()) * float(self.quantity_text.get())) + float(self.commision_text.get())
-        else:
-            self.cost = 0.00
-        self.cost_label.configure(text = 'Cost of purchase ((Price*Quantity) + Commision): ' + str(self.cost))
-        
+        try:
+            if(len(self.commision_text.get()) == 0):
+                self.commision_text.set('0.00')
+            if( (len(self.price_text.get()) > 0) and (len(self.quantity_text.get()) > 0)):
+                self.cost = (float(self.price_text.get()) * float(self.quantity_text.get())) + float(self.commision_text.get())
+            else:
+                self.cost = 0.00
+            self.cost_label.configure(text = 'Cost of purchase ((Price*Quantity) + Commision): ' + str(self.cost))
+        except Exception as e:
+            msgbx.showerror("Error", e)        
+            return
+            
     def btnAddScript(self):
         if (len(self.exchange_text.get()) > 0 and len(self.symbol_text.get()) > 0):
             self.iscancel = False
@@ -102,9 +106,9 @@ class classAddNewScript(Toplevel):
             dictReturn = dict()
             dictReturn['Exchange'] = self.exchange_text.get()
             dictReturn['Symbol'] = self.symbol_text.get()
-            dictReturn['Price'] = self.price_text.get()
-            dictReturn['Date'] = self.purchasedate_text.get()
-            dictReturn['Quantity'] = self.quantity_text.get()
-            dictReturn['Commission'] = self.commision_text.get()
-            dictReturn['Cost'] = str(self.cost)
+            dictReturn['Purchase Price'] = self.price_text.get()
+            dictReturn['Purchase Date'] = self.purchasedate_text.get()
+            dictReturn['Purchase Qty'] = self.quantity_text.get()
+            dictReturn['Commission Paid'] = self.commision_text.get()
+            dictReturn['Cost of Investment'] = str(self.cost)
             return dictReturn
