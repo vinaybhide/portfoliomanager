@@ -88,40 +88,6 @@ class PortfolioManager:
         self.popup_menu_righclick.add_command(label="Refresh Data", command=self.RefreshScriptData)
         self.output_tree.bind('<Button-3>', self.OnRightClick)
 
-
-        """ commenting as this is moved to popup add new script
-        # Now create exchange label and combo box to show exchange along with associated text variable to hold selection
-        self.exchange_label = ttk.Label(self.content, text='Select Exchange: ')
-        self.exchange_text = StringVar()
-        self.exchange_combo = ttk.Combobox(self.content, textvariable=self.exchange_text, values=('BSE', 'NSE'), state='readonly')
-
-        # Now create stock symbol label and text box to allow user to enter stock symbol
-        self.symbol_label = ttk.Label(self.content, text='Enter stock symbol: ')
-        self.symbol_text = StringVar()
-        self.symbol_entry = ttk.Entry(self.content, textvariable=self.symbol_text, width=5)
-
-        # Now create purchase price entry
-        self.price_label = ttk.Label(self.content, text='Enter your purchase price: ')
-        self.price_text = StringVar(value='0.00')
-        self.price_entry = ttk.Entry(self.content, textvariable=self.price_text, width=10)
-
-        # Now create purchase date entry
-        self.purchasedate_label = ttk.Label(self.content, text='Enter date of purchase: ')
-
-        self.purchasedate_text = StringVar(value=date.today())
-        self.purchasedate_entry = ttk.Entry(self.content, text='yyyy-mm-dd', textvariable=self.purchasedate_text, width=10)
-
-        # Now put all this on grid
-        self.exchange_label.grid(row=0, column=0, sticky=E)
-        self.exchange_combo.grid(row=0, column=1, sticky=W)
-        self.symbol_label.grid(row=0, column=2, sticky=E)
-        self.symbol_entry.grid(row=0, column=3, sticky=W)
-        self.price_label.grid(row=0, column=4, sticky=E)
-        self.price_entry.grid(row=0, column=5, sticky=W)
-        self.purchasedate_label.grid(row=0, column=6, sticky=E)
-        self.purchasedate_entry.grid(row=0, column=7, sticky=W)
-        """
-
         self.output_tree.grid(row=0, column=0, rowspan=1, columnspan=11, sticky=(N,E, W, S))
         
         self.output_tree.vert_scroll.grid(row=0, column=11, sticky=(N, E, S))
@@ -138,95 +104,82 @@ class PortfolioManager:
         self.root.rowconfigure(0, weight=1)
         self.content.columnconfigure(0, weight=1)
 
-        """self.content.columnconfigure(0, weight=3)
-        self.content.columnconfigure(1, weight=3)
-        self.content.columnconfigure(2, weight=3)
-        self.content.columnconfigure(3, weight=3)
-        self.content.columnconfigure(4, weight=3)
-        self.content.columnconfigure(5, weight=3)
-        self.content.columnconfigure(6, weight=3)
-        self.content.columnconfigure(7, weight=3)
-        self.content.columnconfigure(8, weight=1)
-        self.content.columnconfigure(9, weight=1)
-        self.content.columnconfigure(10, weight=1)
-        """
-
         mainloop()
 
-
-    # Method to get current stock quote for given stock name
-    def get_stock_quote(self, argStockName, argPrice='NA', argPurchaseDate='NA', 
-                        argQuantity='NA', argCommission='NA', argCost='NA'):
+    """Method - get_stock_quote
+        #*args = "Purchase Price=123.33", "Purchase Date=2019-10-10", "Purchase Qty=110", 
+        #   "Commision=10", "Cost of Investment=1111"
+        # Method to get current stock quote for given stock name"""
+    def get_stock_quote(self, argStockName, *args):
         #global bool_test
+        
         dfstockname = DataFrame()
+        listselfcol = list()
+        listselfval = list()
+        if(len(args) == 5):
+            argctr = 0
+            for eacharg in args:
+                argsplit = eacharg.split('=')
+                listselfcol.insert(argctr, argsplit[0].strip())
+                listselfval.insert(argctr, argsplit[1].strip())
+                argctr += 1
+          
+            try:
+                listindex = listselfcol.index('Purchase Price')
+                sPurchasePrice = listselfval[listindex]
+                listindex = listselfcol.index('Purchase Date')
+                sPurchaseDate = listselfval[listindex]
+                listindex = listselfcol.index('Purchase Qty')
+                sQty = listselfval[listindex]
+                listindex = listselfcol.index('Commission Paid')
+                sCommissionPaid = listselfval[listindex]
+                listindex = listselfcol.index('Cost of Investment')
+                sCost = listselfval[listindex]
+            except ValueError as verr:
+                msgbx.showerror("Error", "Insufficient arguments passed in *args")
+                return
+        else:
+            msgbx.showerror("Error", "Insufficient arguments passed in *args")
+            return
+        
         if self.bool_test:
             dfstockname = pd.read_csv("E:\\python_projects\\TestData\\global_quote.csv")
         else:
             try:
                 dfstockname, meta_data = self.ts.get_quote_endpoint(argStockName)
-                currclosingprice = float(dfstockname.values[0][4])
-                status = ''
-                currentvalue=0.00
-                if((len(argQuantity) > 0) and (len(argCost) > 0)):
-                    currentvalue = currclosingprice * float(argQuantity)
-                    if(currentvalue > float(argCost)):
-                        status = '↑'
-                    elif (currentvalue < float(argCost)):
-                        status = '↓'
-                    elif (currentvalue == float(argCost)):
-                        status = '↔'
             except ValueError as error:
-                msgbx.showerror("Alpha Vantage error", error)
+                msgbx.showerror("Alpha Vantage Error", error)
                 return
-        dfstockname.insert(1, 'Purchase Price', argPrice)
-        dfstockname.insert(2, 'Purchase Date', argPurchaseDate)
-        dfstockname.insert(3, 'Purchase Quantity', argQuantity)
-        dfstockname.insert(4, 'Commission Paid', argCommission)
-        dfstockname.insert(5, 'Cost of Investment', argCost)
-        dfstockname.insert(6, 'Current Value', str(currentvalue))
-        dfstockname.insert(7, 'Status', status) #alt 24 ↑, alt 25 ↓, alt 29 ↔
+        currclosingprice = float(dfstockname.values[0][4])
+        status = ''
+        currentvalue=0.00
+        if((len(sQty) > 0) and (len(sCost) > 0)):
+            currentvalue = currclosingprice * float(sQty)
+            if(currentvalue > float(sCost)):
+                status = '↑'
+            elif (currentvalue < float(sCost)):
+                status = '↓'
+            elif (currentvalue == float(sCost)):
+                status = '↔'
+            
+        listselfcol.insert(argctr, 'Current Value')
+        listselfval.insert(argctr, str(currentvalue))
+        argctr += 1
+        listselfcol.insert(argctr, 'Status')
+        listselfval.insert(argctr, status)  #alt 24 ↑, alt 25 ↓, alt 29 ↔
+
         dfcolumnlen = len(dfstockname.columns)
-        #heading_list=list(dfstockname.columns[0:12])
         heading_list=list(dfstockname.columns[0:dfcolumnlen])
-        self.print_heading(heading_list)
+
+        if(dfcolumnlen > len(listselfcol)):
+            self.output_counter = self.output_tree.print_heading(dfcolumnlen, self.output_counter)
+        else:
+            self.output_counter = self.output_tree.print_heading(len(listselfcol), self.output_counter)
         
-        #values_list=list((dfstockname.values[0:12])[0])
         values_list=list((dfstockname.values[0:dfcolumnlen])[0])
-        self.print_values(values_list)
-
-    # based on the list of values create a row in TreeView
-    def print_values(self, arg_values_list):
-        #global output_counter
-        if(self.output_counter>0):
-            # now insert the data in tree
-            iid_str = str(arg_values_list[0])
-            if self.output_tree.exists(iid_str) == False:
-                self.output_tree.insert('', 'end', iid=iid_str, text=str(arg_values_list[0]), values=arg_values_list)
-            else:   # update an existing item with new column values
-                i = 0
-                for each_column in self.output_tree['columns']:
-                    self.output_tree.set(iid_str, each_column, arg_values_list[i])
-                    i += 1
-            self.output_tree.focus(iid_str)
-            self.output_tree.selection_set(iid_str)
-        self.output_counter += 1
-
-    # Method that creates columns in TreeView
-    def print_heading(self, arg_heading_list):
-        # get the column headings
-        #global output_counter
-        if(self.output_counter==0):
-            self.output_counter += 1
-
-            # add code for tree, since this is the first line we are reading we will set the columns here
-            self.output_tree['columns'] = arg_heading_list
-            self.output_tree.column("#0", width=100, anchor='center')
-            self.output_tree.heading("#0", text='Script', anchor='center')
-            for each_column in arg_heading_list:
-                #column_str = str(each_column)
-                #column_str = column_str[4:]
-                self.output_tree.column(str(each_column), width=60, anchor='center')
-                self.output_tree.heading(str(each_column), text=str(each_column), anchor='center')
+        #commenting for heirarchy
+        #self.print_values(values_list)
+        self.output_counter = self.output_tree.print_values(heading_list, values_list, listselfcol, listselfval, self.output_counter)
 
     def resetExisting(self):
         #global output_counter
@@ -248,43 +201,51 @@ class PortfolioManager:
     def menuDailyStock(self):
         return True
 
+    """Method - AddScript
+        Adds a new script to the tree view """
     def AddScript(self):
         dnewscript = dict()
         dnewscript = classAddNewScript(master=self.content).show()
         # returns dictionary - {'Exchange': 'BSE', 'Symbol': 'LT', 'Price': '1000', 'Date': '2020-02-22', 'Quantity': '10', 'Commission': '1', 'Cost': '10001.0'}
-
         if(len(dnewscript['Exchange'])) > 0 and (len(dnewscript['Symbol']) >0):
             stock_name = dnewscript['Exchange'] + ':' + dnewscript['Symbol']
-            self.get_stock_quote(stock_name, dnewscript['Price'], dnewscript['Date'], 
-                dnewscript['Quantity'], dnewscript['Commission'], dnewscript['Cost'])
+            listnewscript = list(dnewscript.items())
+            self.get_stock_quote(stock_name, listnewscript[2][0] + '=' +listnewscript[2][1],
+                                            listnewscript[3][0] + '=' + listnewscript[3][1],
+                                            listnewscript[4][0] + '=' + listnewscript[4][1],
+                                            listnewscript[5][0] + '=' + listnewscript[5][1],
+                                            listnewscript[6][0] + '=' + listnewscript[6][1])
+            #dnewscript['Price'], dnewscript['Date'], 
+            #   dnewscript['Quantity'], dnewscript['Commission'], dnewscript['Cost'])
+
         else:
             msgbx.showerror("Add Script", "Error: Please provide exchange and symbol")
 
     def ModifySelectedScript(self):
         return
 
+    """ Method - DeleteSelectedScript
+        Deletes selection. If parent script is selected everything is deleted
+        else individual row under parent is selected
+        if selection is MARKETCOL or HOLDINGCOL then nothing will be deleted"""
     def DeleteSelectedScript(self):
-            try:
-                #item = self.script_tree.identify_row(event.y)
-                item=self.output_tree.selection()[0]
-            except IndexError:
-                return
-            script_name = self.output_tree.item(item, "text")
+            item = self.output_tree.is_market_holding_col_row()
+            if(len(item) > 0):
+                try:
+                    if(msgbx.askyesno('Delete script', 'Are you sure you want to delete: '+ item + '?')):
+                        self.output_tree.delete(item)
+                        msgbx.showinfo('Delete Script', "Selected entry deleted successfully. Please make sure to save updated portfolio!")
+                except Exception as e:
+                    msgbx.showerror('Delete Error', "Selected entry could not be deleted due to error:-" + str(e))
+                    return
 
-            try:
-                if(msgbx.askyesno('Delete script', 'Are you sure you want to delete: '+ script_name + '?')):
-                    self.output_tree.delete(item)
-                    msgbx.showinfo('Delete Script', "Selected entry deleted successfully. Please make sure to save updated portfolio!")
-            except Exception as e:
-                msgbx.showerror('Delete Error', "Selected entry could not be deleted due to error:-" + str(e))
-                return
-
+    """ Method - menuGetDailyTimeSeries
+        Method shows daily timeseries for selected stock within the app window"""
     def menuGetDailyTimeSeries(self):
-            try:
-                item=self.output_tree.selection()[0]
-            except IndexError:
+            script_name = self.output_tree.get_parent_item()
+            if(len(script_name) <=0):
+                msgbx.showwarning("Warning", "Please select valid row")
                 return
-            script_name = self.output_tree.item(item, "text")
             # Get the data, returns a tuple
             # aapl_data is a pandas dataframe, aapl_meta_data is a dict
             if self.bool_test:
@@ -323,12 +284,21 @@ class PortfolioManager:
             self.output_canvas.draw()
             self.toolbar.update()
 
+    """ Method - menuComparePriceSMA
+        Method to show comparison bewtween daily timeseriese and SMA"""
     def menuComparePriceSMA(self):
-            try:
-                item=self.output_tree.selection()[0]
-            except IndexError:
+            script_name = self.output_tree.get_parent_item()
+            if(len(script_name) <=0):
+                msgbx.showwarning("Warning", "Please select valid row")
                 return
-            script_name = self.output_tree.item(item, "text")
+            # Now get the purchase price if available
+            listpurchasprice = list()
+            childrows = self.output_tree.get_children(script_name)
+            for child in childrows:
+                # now get  rows values only for self holding, we will not store market data
+                if(str(child).upper().find('HOLDINGVAL') >= 0):
+                    child_val = self.output_tree.item(child, 'values')
+                    listpurchasprice.append([child_val[0], child_val[1]])
 
             if self.bool_test:
                 aapl_data = pd.read_csv("E:\\python_projects\\TestData\\daily_MSFT.csv")
@@ -343,9 +313,9 @@ class PortfolioManager:
                     return
 
             # get users price & date
-            dict_curr_row = self.output_tree.item(script_name)
-            purchase_price = dict_curr_row['values'][1]
-            purchase_date =  dict_curr_row['values'][2]
+            #dict_curr_row = self.output_tree.item(script_name)
+            #purchase_price = dict_curr_row['values'][1]
+            #purchase_date =  dict_curr_row['values'][2]
             
             # Visualization
             f_temp=Figure(figsize=(15, 6), dpi=80, facecolor='w', edgecolor='k')
@@ -363,10 +333,13 @@ class PortfolioManager:
             plt.title(script_name)
             plt.xlabel('Date')
             plt.ylabel('Price')
-            if ((purchase_date != '') and (purchase_price != '')):
-                plt.annotate('Your price point', (mdates.datestr2num(purchase_date), float(purchase_price)),
+            for eachrow in listpurchasprice:
+                if ((eachrow[0] != '') and (eachrow[1] != '')):
+                    plt.annotate('Your price point', (mdates.datestr2num(eachrow[1]), float(eachrow[0])),
                         xytext=(15,15), textcoords='offset points', arrowprops=dict(arrowstyle='-|>'))
-                plt.axhline(float(purchase_price), color='y') # will draw a horizontal line at purchase price
+                    plt.axhline(float(eachrow[0]), color='y') # will draw a horizontal line at purchase price
+                    plt.axvline(mdates.datestr2num(eachrow[1]), color='y')
+
             plt.tight_layout()
             plt.legend(loc='upper left')
             plt.grid()
@@ -385,6 +358,11 @@ class PortfolioManager:
             self.root.update()
 
         # File open menu handler
+        # the file will be in following format
+        #exchange:scriptname,Purchase Price=###.##,Purchase Date=YYYY-MM-DD,Purchase Qty=##.##,Commission Paid=##.##,Cost of Investment=####.##
+
+    """Method - OpenPortfolio
+        Opens a valid portfolio file"""
     def OpenPortfolio(self):
             openfilehandle=askopenfile('r', initialdir = "/", title = "Open portfolio file to load portfolio",filetypes = (("csv files","*.csv"),("all files","*.*")) )
             if openfilehandle is not None:
@@ -400,71 +378,54 @@ class PortfolioManager:
                     else:
                         msgbx.showerror("Open portfolio", "Error->Input file not in correct format." +"\n" + "Each line must be in the format of ScriptName,PurchasePrice,PurchaseDate")
                         return
-                
-        # File save menu handler
+
+    """ method SavePortfolio       
+        # the tree is in following format for each script
+        # + Exchange:Script
+        #       Market Data     col1 col2....
+        #       Market Val      val1 val2....
+        #       Holding Data    col1 col2....
+        #       Holding Value_1 val1 val2....
+        #       Holding Value_2 val1 val2....
+        # the file will be in following format
+        #exchange:scriptname,Purchase Price=###.##,Purchase Date=YYYY-MM-DD,Purchase Qty=##.##,Commission Paid=##.##,Cost of Investment=####.## """
     def SavePortfolio(self):
             savefilehandle = asksaveasfile(initialdir = "/",title = "Select file to save portfolio scripts",filetypes = (("csv files","*.csv"),("all files","*.*")))
             # savefilehandle = open(savefilename, 'w')
             scripttowrite = self.output_tree.get_children()
             for script in scripttowrite: 
-                dict_curr_row = self.output_tree.item(script)
-                purchase_price = dict_curr_row['values'][1]
-                purchase_date =  dict_curr_row['values'][2]
-                purchase_quantity = dict_curr_row['values'][3]
-                commission_paid = dict_curr_row['values'][4]
-                investment_cost = dict_curr_row['values'][5]
-
-                savefilehandle.writelines(str(script)+','+ str(purchase_price)+','+str(purchase_date)+','+
-                    str(purchase_quantity) + ',' + str(commission_paid) + ',' + str(investment_cost) +'\n')
+                #get children of the current iid
+                childrows = self.output_tree.get_children(script)
+                for child in childrows:
+                    # now get  rows values only for self holding, we will not store market data
+                    if(str(child).upper().find('HOLDINGVAL') >= 0):
+                        child_val = self.output_tree.item(child, 'values')
+                        strtowrite = script+",Purchase Price="+child_val[0]+",Purchase Date="+child_val[1]+",Purchase Qty="+child_val[2]+",Commission Paid="+child_val[3]+",Cost of Investment="+child_val[4]+"\n"
+                        savefilehandle.writelines(strtowrite)
+            
             savefilehandle.close()
 
+    """ Method - RefreshScriptData
+        Looks up the market data and refreshes the same along with updating existing holding records"""
     def RefreshScriptData(self):
-        try:
-            #scriptname = self.output_tree.selection()[0]
-            item = self.output_tree.selection()
-            dict_curr_row = self.output_tree.item(item)
-            purchase_price = dict_curr_row['values'][1]
-            purchase_date =  dict_curr_row['values'][2]
-            purchase_quantity = dict_curr_row['values'][3]
-            commission_paid = dict_curr_row['values'][4]
-            investment_cost = dict_curr_row['values'][5]
-            self.get_stock_quote(item[0], purchase_price, purchase_date, purchase_quantity,
-                    commission_paid, investment_cost)
-        except IndexError:
-            return
+        script_name = self.output_tree.get_parent_item()
+        if(len(script_name) <=0):
+            msgbx.showwarning("Warning", "Please select valid row")
+            return        
+        self.get_stock_quote(script_name, "Purchase Price="+'', "Purchase Date="+'',
+                        "Purchase Qty="+'', "Commission Paid="+'', "Cost of Investment="+'')
 
+    """ Method - OnRightClick
+        This method will show popup menu if user right clicks a valid row"""
     def OnRightClick(self, event):
             try:
-                # first find on which row/item user clicked
-                item = self.output_tree.identify_row(event.y)
-                item2 =self.output_tree.selection()[0]
-                if (item == ''):
-                    return
-                elif (item != item2):
-                    self.output_tree.selection_set(item)
-
-                try:
-                    self.popup_menu_righclick.tk_popup(event.x_root, event.y_root, 0)
-                finally:
-                    self.popup_menu_righclick.grab_release()
-            except IndexError:
+                if(self.output_tree.selectRowOnRightClick(event)):
+                    try:
+                        self.popup_menu_righclick.tk_popup(event.x_root, event.y_root, 0)
+                    finally:
+                        self.popup_menu_righclick.grab_release()
+            except Exception as e:
                 return
-"""     
-        try:
-            item = self.identify_row(event.y)
-            # item=output_tree.selection()[0]
-        except IndexError:
-            return
-        script_name = self.item(item, "text")
-
-        try:
-            if(msgbx.askyesno('Delete script', 'Are you sure you want to delete: '+ script_name + '?')):
-                self.delete(item)
-        except Exception as e:
-            msgbx.showerror('Delete Error', "Selected entry could not be deleted due to error:-" + e)
-            return
-        msgbx.showinfo('Delete Script', "Selected entry deleted successfully. Please make sure to save updated portfolio!") 
-"""
 
 if __name__ == "__main__":
     portfolio_manager=PortfolioManager()
