@@ -27,6 +27,7 @@ class ScriptTreeView(ttk.Treeview):
         self.graph_canvas = argCanvas
         self.graph_toolbar = argToolbar
         self.btestmode = argTestMode
+        self.HOLDINGVAL = '_HOLDINGVAL_'
 
         #self.script_tree = ttk.Treeview(master, selectmode='browse')
         #self.bind('<Double 1>', self.OnTreeDoubleClick)
@@ -156,11 +157,19 @@ class ScriptTreeView(ttk.Treeview):
         self.graph_canvas.draw()
         self.graph_toolbar.update()
 
-    def update_currentval(self, listmarketValues, listrowValues, rowid):
+    def update_currentval(self, listmarketValues, listmodvalues, listrowValues, rowid, holdingiid):
+        
+        if(rowid == holdingiid):
+            self.set(rowid, column=1, value=listmodvalues[0])
+            self.set(rowid, column=2, value=listmodvalues[1])
+            self.set(rowid, column=3, value=listmodvalues[2])
+            self.set(rowid, column=4, value=listmodvalues[3])
+            self.set(rowid, column=5, value=listmodvalues[4])
+
         status = ''
         closingprice = float(listmarketValues[4])
         currentvalue=0.00
-        if((len(listrowValues[2]) > 0) and (len(listrowValues[4]) > 0)):
+        if( (rowid != holdingiid) and (len(listrowValues[2]) > 0) and (len(listrowValues[4]) > 0)):
             currentvalue = closingprice * float(listrowValues[2])
             if(currentvalue > float(listrowValues[4])):
                 status = '↑'
@@ -168,10 +177,18 @@ class ScriptTreeView(ttk.Treeview):
                 status = '↓'
             elif (currentvalue == float(listrowValues[4])):
                 status = '↔'
-            self.set(rowid, column=6, value=str(currentvalue))
-            self.set(rowid, column=7, value=status)
+        elif ( (rowid == holdingiid) and (len(listmodvalues[2]) > 0) and (len(listmodvalues[4]) > 0)):
+            currentvalue = closingprice * float(listmodvalues[2])
+            if(currentvalue > float(listmodvalues[4])):
+                status = '↑'
+            elif (currentvalue < float(listmodvalues[4])):
+                status = '↓'
+            elif (currentvalue == float(listmodvalues[4])):
+                status = '↔'
+        self.set(rowid, column=6, value=str(currentvalue))
+        self.set(rowid, column=7, value=status)
 
-    def print_values(self, arg_heading_list, arg_values_list, arg_self_col_list, arg_self_val_list, counter):
+    def print_values(self, argholdingiid, arg_heading_list, arg_values_list, arg_self_col_list, arg_self_val_list, counter):
         self.output_counter = counter
         if(self.output_counter>0):
             # now insert the data in tree
@@ -186,14 +203,16 @@ class ScriptTreeView(ttk.Treeview):
                 
                 for child in childrows:
                         # now get  rows values only for self holding, we will not store market data
-                    if(str(child).upper().find('HOLDINGVAL') >= 0):
+                    if(str(child).upper().find(self.HOLDINGVAL) >= 0):
+                        split_list = str(child).split('_')
+                        holdingctr = int(split_list[len(split_list)-1])
                         holdingctr +=1
                         row_val = self.item(child, 'values')
-                        self.update_currentval(arg_values_list, row_val, child)
+                        self.update_currentval(arg_values_list, arg_self_val_list, row_val, child, argholdingiid)
 
-                if((holdingctr >= 1) and (self.isValidHoldingRecord(arg_self_col_list, arg_self_val_list))):
+                if((argholdingiid == '') and (holdingctr >= 1) and (self.isValidHoldingRecord(arg_self_col_list, arg_self_val_list))):
                     #now insert the self data
-                    curr_iid = iid_str + '_HOLDINGVAL' + str(holdingctr)
+                    curr_iid = iid_str + self.HOLDINGVAL + str(holdingctr)
                     idcol = self.insert(iid_str, "end", iid = curr_iid,text='')
                     for colid in range(len(arg_self_val_list)):
                         self.set(idcol, column=colid+1, value=arg_self_val_list[colid])
@@ -217,13 +236,14 @@ class ScriptTreeView(ttk.Treeview):
                     self.set(idcol, column=colid+1, value=arg_self_col_list[colid])
 
                 #now insert the self data
-                idcol = self.insert(iid_str, "end", iid = iid_str + '_HOLDINGVAL1',text='')
+                idcol = self.insert(iid_str, "end", iid = iid_str + self.HOLDINGVAL +'1',text='')
                 for colid in range(len(arg_self_val_list)):
                     self.set(idcol, column=colid+1, value=arg_self_val_list[colid])
 
             self.focus(iid_str)
             self.selection_set(iid_str)
         self.output_counter += 1
+        self.update()
         return self.output_counter
 
     # Method that creates columns in TreeView
@@ -240,6 +260,7 @@ class ScriptTreeView(ttk.Treeview):
                 self.column(str(eachcol), width=100, anchor='center')
                 self.heading(str(eachcol), text="", anchor='center')
 
+        self.update()
         return self.output_counter
     
     """method - get_parent_item
@@ -262,6 +283,25 @@ class ScriptTreeView(ttk.Treeview):
         else:
             script_name = self.item(parentitem, "text")
         return script_name
+
+    def is_parent_item_selected(self, argitem = None):
+        try:
+            if(argitem == None):
+                item = self.selection()[0]
+            else:
+                item = argitem
+            #if a parent BSE:HDFC is already selected then .parent will return ''
+            parentitem = self.parent(item)
+        except IndexError:
+            return False
+        script_name = ''
+        if(len(parentitem) > 0):
+            #script_name = self.item(item, "text")
+            return False
+        #else:
+        #    script_name = self.item(parentitem, "text")
+        #return script_name
+        return True
 
     """ method - is_market_holding_col_row
         given item or for selected item, 

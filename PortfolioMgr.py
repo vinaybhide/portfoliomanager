@@ -17,8 +17,8 @@ import warnings
 from datetime import date
 
 from ScriptTree import *
-from addnewscript import *
-
+from addnewmodifyscript import *
+from BackTestSMA import *
 class PortfolioManager:
     def __init__(self):
         super().__init__()
@@ -56,9 +56,9 @@ class PortfolioManager:
         # add manage script menu
         self.script_menu=Menu(self.menu, tearoff=0)
         self.script_menu.add_command(label="Add New Script", command=self.AddScript)
-        self.script_menu.add_command(label="Delete Selected Script", command=self.DeleteSelectedScript)
-        self.script_menu.add_command(label="Modify Selected Script", command=self.ModifySelectedScript)
-        self.menu.add_cascade(label='Manage Scripts', menu=self.script_menu)
+        self.script_menu.add_command(label="Refresh Selected Script with Market Price", command=self.RefreshScriptData)
+        self.script_menu.add_command(label="Delete Selected Script from Portfolio", command=self.DeleteSelectedScriptFromPortfolio)
+        self.menu.add_cascade(label='Manage Portfolio', menu=self.script_menu)
 
         # add script analysis menu
         self.analyze_menu=Menu(self.menu, tearoff=0)
@@ -66,7 +66,7 @@ class PortfolioManager:
         self.analyze_menu.add_command(label="Get Intra Day", command=self.menuGetIntraDay)
         self.analyze_menu.add_command(label="Get Daily Stock", command=self.menuDailyStock)
         self.analyze_menu.add_separator()
-        self.analyze_menu.add_command(label="Daily price series", command=self.menuGetDailyTimeSeries)
+        self.analyze_menu.add_command(label="Show Historical Price Seriese for Selected Script", command=self.menuGetDailyTimeSeries)
         self.analyze_menu.add_command(label="Compare price Vs SMA", command=self.menuComparePriceSMA)
         self.menu.add_cascade(label='Analyze Scripts', menu=self.analyze_menu)
 
@@ -84,8 +84,9 @@ class PortfolioManager:
         self.output_tree = ScriptTreeView(self.content, self.ts, self.ti, self.f, self.bool_test, self.output_canvas, self.toolbar, selectmode='browse')
 
         self.popup_menu_righclick = Menu(self.menu, tearoff=0)
-        self.popup_menu_righclick.add_command(label="Delete Script", command=self.DeleteSelectedScript)
-        self.popup_menu_righclick.add_command(label="Refresh Data", command=self.RefreshScriptData)
+        self.popup_menu_righclick.add_command(label="Delete", command=self.DeleteSelectedScript)
+        self.popup_menu_righclick.add_command(label="Modify", command=self.ModifySelectedScript)
+        self.popup_menu_righclick.add_command(label="Performance Graph", command=self.ShowScriptPerformanceGraph)
         self.output_tree.bind('<Button-3>', self.OnRightClick)
 
         self.output_tree.grid(row=0, column=0, rowspan=1, columnspan=11, sticky=(N,E, W, S))
@@ -110,7 +111,7 @@ class PortfolioManager:
         #*args = "Purchase Price=123.33", "Purchase Date=2019-10-10", "Purchase Qty=110", 
         #   "Commision=10", "Cost of Investment=1111"
         # Method to get current stock quote for given stock name"""
-    def get_stock_quote(self, argStockName, *args):
+    def get_stock_quote(self, argHoldingIID = '', argStockName='', *args):
         #global bool_test
         
         dfstockname = DataFrame()
@@ -179,7 +180,7 @@ class PortfolioManager:
         values_list=list((dfstockname.values[0:dfcolumnlen])[0])
         #commenting for heirarchy
         #self.print_values(values_list)
-        self.output_counter = self.output_tree.print_values(heading_list, values_list, listselfcol, listselfval, self.output_counter)
+        self.output_counter = self.output_tree.print_values(argHoldingIID, heading_list, values_list, listselfcol, listselfval, self.output_counter)
 
     def resetExisting(self):
         #global output_counter
@@ -188,6 +189,109 @@ class PortfolioManager:
         self.f.clf()
         if(self.output_counter > 0):
             self.output_counter = 1
+
+    """Method - AddScript
+        Adds a new script to the tree view """
+    def AddScript(self):
+        dnewscript = dict()
+        dnewscript = classAddNewModifyScript(master=self.content).show()
+        # returns dictionary - {'Exchange': 'BSE', 'Symbol': 'LT', 'Price': '1000', 'Date': '2020-02-22', 'Quantity': '10', 'Commission': '1', 'Cost': '10001.0'}
+        if(len(dnewscript['Exchange'])) > 0 and (len(dnewscript['Symbol']) >0):
+            stock_name = dnewscript['Exchange'] + ':' + dnewscript['Symbol']
+            listnewscript = list(dnewscript.items())
+            self.get_stock_quote("", stock_name, listnewscript[2][0] + '=' +listnewscript[2][1],
+                                            listnewscript[3][0] + '=' + listnewscript[3][1],
+                                            listnewscript[4][0] + '=' + listnewscript[4][1],
+                                            listnewscript[5][0] + '=' + listnewscript[5][1],
+                                            listnewscript[6][0] + '=' + listnewscript[6][1])
+            #dnewscript['Price'], dnewscript['Date'], 
+            #   dnewscript['Quantity'], dnewscript['Commission'], dnewscript['Cost'])
+
+        else:
+            msgbx.showerror("Add Script", "Error: Please provide exchange and symbol")
+
+    """ DeleteSelectedScriptFromPortfolio """
+    def DeleteSelectedScriptFromPortfolio(self):
+            item = self.output_tree.get_parent_item()
+            if(len(item) > 0):
+                try:
+                    if(msgbx.askyesno('Delete script from portfolio', 'Are you sure you want to delete entire script data?: '+ item + '?')):
+                        self.output_tree.delete(item)
+                        self.output_tree.update()
+                        msgbx.showinfo('Delete Script from portfolio', "Selected script deleted successfully from portfolio. Please make sure to save portfolio!")
+                except Exception as e:
+                    msgbx.showerror('Delete Error', "Selected entry could not be deleted due to error:-" + str(e))
+                    return
+
+    """ Method - RefreshScriptData
+        Looks up the market data and refreshes the same along with updating existing holding records"""
+    def RefreshScriptData(self):
+        script_name = self.output_tree.get_parent_item()
+        if(len(script_name) <=0):
+            msgbx.showwarning("Warning", "Please select valid row")
+            return        
+        self.get_stock_quote("", script_name, "Purchase Price="+'', "Purchase Date="+'',
+                        "Purchase Qty="+'', "Commission Paid="+'', "Cost of Investment="+'')
+
+
+    """ModifySelectedScript"""
+    def ModifySelectedScript(self):
+        rowid = self.output_tree.is_market_holding_col_row()
+        
+        if(len(rowid) <= 0):
+            msgbx.showwarning("Modify Script", "Please select valid script row to modify")
+            return
+        else:
+            script_name = self.output_tree.get_parent_item(rowid)
+            if(len(script_name) <=0):
+                msgbx.showwarning("Warning", "Please select valid row")
+                return
+
+        row_val = self.output_tree.item(rowid, 'values')
+        
+        dmodifyscript = dict()
+        dmodifyscript = classAddNewModifyScript(master=self.content, argisadd=False, argscript=script_name, 
+            argPurchasePrice=row_val[0], argPurchaseDate=row_val[1], argPurchaseQty=row_val[2], argCommissionPaid=row_val[3], argCostofInvestment=row_val[4]).show()
+        # returns dictionary - {'Exchange': 'BSE', 'Symbol': 'LT', 'Price': '1000', 'Date': '2020-02-22', 'Quantity': '10', 'Commission': '1', 'Cost': '10001.0'}
+        if(len(dmodifyscript['Exchange'])) > 0 and (len(dmodifyscript['Symbol']) >0):
+            stock_name = dmodifyscript['Exchange'] + ':' + dmodifyscript['Symbol']
+            listnewscript = list(dmodifyscript.items())
+            self.get_stock_quote(rowid, stock_name, listnewscript[2][0] + '=' +listnewscript[2][1],
+                                            listnewscript[3][0] + '=' + listnewscript[3][1],
+                                            listnewscript[4][0] + '=' + listnewscript[4][1],
+                                            listnewscript[5][0] + '=' + listnewscript[5][1],
+                                            listnewscript[6][0] + '=' + listnewscript[6][1])
+        else:
+            msgbx.showerror("Modify Script", "Error: Please provide value for all fields")
+
+    """ Method - DeleteSelectedScript
+        Deletes selection. If parent script is selected everything is deleted
+        else individual row under parent is selected
+        if selection is MARKETCOL or HOLDINGCOL then nothing will be deleted"""
+    def DeleteSelectedScript(self):
+            item = self.output_tree.is_market_holding_col_row()
+            if(len(item) > 0):
+                try:
+                    if(msgbx.askyesno('Delete script', 'Are you sure you want to delete: '+ item + '?')):
+                        self.output_tree.delete(item)
+                        self.output_tree.update()
+                        msgbx.showinfo('Delete Script', "Selected entry deleted successfully. Please make sure to save updated portfolio!")
+                except Exception as e:
+                    msgbx.showerror('Delete Error', "Selected entry could not be deleted due to error:-" + str(e))
+                    return
+
+    """ ShowScriptPerformanceGraph - called on right click menu selection """
+    def ShowScriptPerformanceGraph(self):
+        script_name = self.output_tree.get_parent_item()
+        if(len(script_name) <=0):
+            msgbx.showwarning("Warning", "Please select valid row")
+            return
+        # Now get the purchase price if available
+        holdinvalobj = BackTestSMA(argkey='XXXX', argscript=script_name, argscripttree=self.output_tree, argavgsmall=10, 
+            argavglarge=20)
+        holdinvalobj.findScriptPerformance()
+        return
+
 
     # command handler for stock quote button
     def menuGetStockQuote(self):
@@ -200,44 +304,6 @@ class PortfolioManager:
     # command handler for daily stock
     def menuDailyStock(self):
         return True
-
-    """Method - AddScript
-        Adds a new script to the tree view """
-    def AddScript(self):
-        dnewscript = dict()
-        dnewscript = classAddNewScript(master=self.content).show()
-        # returns dictionary - {'Exchange': 'BSE', 'Symbol': 'LT', 'Price': '1000', 'Date': '2020-02-22', 'Quantity': '10', 'Commission': '1', 'Cost': '10001.0'}
-        if(len(dnewscript['Exchange'])) > 0 and (len(dnewscript['Symbol']) >0):
-            stock_name = dnewscript['Exchange'] + ':' + dnewscript['Symbol']
-            listnewscript = list(dnewscript.items())
-            self.get_stock_quote(stock_name, listnewscript[2][0] + '=' +listnewscript[2][1],
-                                            listnewscript[3][0] + '=' + listnewscript[3][1],
-                                            listnewscript[4][0] + '=' + listnewscript[4][1],
-                                            listnewscript[5][0] + '=' + listnewscript[5][1],
-                                            listnewscript[6][0] + '=' + listnewscript[6][1])
-            #dnewscript['Price'], dnewscript['Date'], 
-            #   dnewscript['Quantity'], dnewscript['Commission'], dnewscript['Cost'])
-
-        else:
-            msgbx.showerror("Add Script", "Error: Please provide exchange and symbol")
-
-    def ModifySelectedScript(self):
-        return
-
-    """ Method - DeleteSelectedScript
-        Deletes selection. If parent script is selected everything is deleted
-        else individual row under parent is selected
-        if selection is MARKETCOL or HOLDINGCOL then nothing will be deleted"""
-    def DeleteSelectedScript(self):
-            item = self.output_tree.is_market_holding_col_row()
-            if(len(item) > 0):
-                try:
-                    if(msgbx.askyesno('Delete script', 'Are you sure you want to delete: '+ item + '?')):
-                        self.output_tree.delete(item)
-                        msgbx.showinfo('Delete Script', "Selected entry deleted successfully. Please make sure to save updated portfolio!")
-                except Exception as e:
-                    msgbx.showerror('Delete Error', "Selected entry could not be deleted due to error:-" + str(e))
-                    return
 
     """ Method - menuGetDailyTimeSeries
         Method shows daily timeseries for selected stock within the app window"""
@@ -284,9 +350,65 @@ class PortfolioManager:
             self.output_canvas.draw()
             self.toolbar.update()
 
+    
+    def testCompareSMA(self):
+        script_name = self.output_tree.get_parent_item()
+        if(len(script_name) <=0):
+            msgbx.showwarning("Warning", "Please select valid row")
+            return
+        # Now get the purchase price if available
+        listpurchasprice = list()
+        childrows = self.output_tree.get_children(script_name)
+        for child in childrows:
+            # now get  rows values only for self holding, we will not store market data
+            if(str(child).upper().find(self.output_tree.HOLDINGVAL) >= 0):
+                child_val = self.output_tree.item(child, 'values')
+                listpurchasprice.append([child_val[0], child_val[1]])
+        try:
+            #fig, ax = plt.subplot(3, 1, sharex=True, figsize=[16, 9])
+
+            aapl_data = DataFrame()
+            aapl_sma = DataFrame()
+            aapl_data, aapl_meta_data = self.ts.get_daily(symbol=script_name)
+            aapl_sma, aapl_meta_sma = self.ti.get_sma(symbol=script_name)
+            
+            sizeofdaily = aapl_data.index.size
+            aapl_sma = aapl_sma.tail(sizeofdaily)
+
+            f_temp=Figure(figsize=(15, 6), dpi=80, facecolor='w', edgecolor='k')
+
+            #portfolio value
+            ax1 = plt.subplot(211)
+            plt.plot(aapl_data['4. close'], label='Daily stock price')
+            plt.ylabel('Daily Stock Price')
+            plt.legend(loc='upper left')
+            plt.grid()
+            for eachrow in listpurchasprice:
+                if ((eachrow[0] != '') and (eachrow[1] != '')):
+                    plt.annotate(eachrow[0], (mdates.datestr2num(eachrow[1]), float(eachrow[0])),
+                        xytext=(15,15), textcoords='offset points', arrowprops=dict(arrowstyle='-|>'))
+                #plt.axhline(float(eachrow[0]), color='y') # will draw a horizontal line at purchase price
+                #plt.axvline(mdates.datestr2num(eachrow[1]), color='y')
+
+            plt.subplot(212, sharex=ax1)
+            plt.plot(aapl_sma['SMA'], label='SMA')
+
+            #plt.xlabel('Date')
+            plt.ylabel('Simple Moving Average')
+            plt.legend(loc='upper left')
+            plt.grid()
+
+            plt.suptitle(script_name)
+            plt.show()
+        except ValueError as error:
+            msgbx.showerror("Alpha Vantage error", error)
+            return
+
     """ Method - menuComparePriceSMA
         Method to show comparison bewtween daily timeseriese and SMA"""
     def menuComparePriceSMA(self):
+            self.testCompareSMA()
+            return
             script_name = self.output_tree.get_parent_item()
             if(len(script_name) <=0):
                 msgbx.showwarning("Warning", "Please select valid row")
@@ -296,7 +418,7 @@ class PortfolioManager:
             childrows = self.output_tree.get_children(script_name)
             for child in childrows:
                 # now get  rows values only for self holding, we will not store market data
-                if(str(child).upper().find('HOLDINGVAL') >= 0):
+                if(str(child).upper().find(self.output_tree.HOLDINGVAL) >= 0):
                     child_val = self.output_tree.item(child, 'values')
                     listpurchasprice.append([child_val[0], child_val[1]])
 
@@ -308,6 +430,7 @@ class PortfolioManager:
                     # Not sure if we need the following line -- commenting for time being
                     # aapl_sma is a df, aapl_meta_sma also a dict
                     aapl_sma, aapl_meta_sma = self.ti.get_sma(symbol=script_name)
+                    
                 except ValueError as error:
                     msgbx.showerror("Alpha Vantage error", error)
                     return
@@ -373,7 +496,7 @@ class PortfolioManager:
                     # -1 to remove the last '\n' and then split the string by ','
                     arg_list=str(script[:-1]).split(',')
                     if(len(arg_list) == 6):
-                        self.get_stock_quote(str(arg_list[0]), str(arg_list[1]), str(arg_list[2]),
+                        self.get_stock_quote("", str(arg_list[0]), str(arg_list[1]), str(arg_list[2]),
                         str(arg_list[3]), str(arg_list[4]), str(arg_list[5]))    
                     else:
                         msgbx.showerror("Open portfolio", "Error->Input file not in correct format." +"\n" + "Each line must be in the format of ScriptName,PurchasePrice,PurchaseDate")
@@ -398,28 +521,19 @@ class PortfolioManager:
                 childrows = self.output_tree.get_children(script)
                 for child in childrows:
                     # now get  rows values only for self holding, we will not store market data
-                    if(str(child).upper().find('HOLDINGVAL') >= 0):
+                    if(str(child).upper().find(self.output_tree.HOLDINGVAL) >= 0):
                         child_val = self.output_tree.item(child, 'values')
                         strtowrite = script+",Purchase Price="+child_val[0]+",Purchase Date="+child_val[1]+",Purchase Qty="+child_val[2]+",Commission Paid="+child_val[3]+",Cost of Investment="+child_val[4]+"\n"
                         savefilehandle.writelines(strtowrite)
             
             savefilehandle.close()
 
-    """ Method - RefreshScriptData
-        Looks up the market data and refreshes the same along with updating existing holding records"""
-    def RefreshScriptData(self):
-        script_name = self.output_tree.get_parent_item()
-        if(len(script_name) <=0):
-            msgbx.showwarning("Warning", "Please select valid row")
-            return        
-        self.get_stock_quote(script_name, "Purchase Price="+'', "Purchase Date="+'',
-                        "Purchase Qty="+'', "Commission Paid="+'', "Cost of Investment="+'')
-
     """ Method - OnRightClick
         This method will show popup menu if user right clicks a valid row"""
     def OnRightClick(self, event):
             try:
-                if(self.output_tree.selectRowOnRightClick(event)):
+                if((self.output_tree.selectRowOnRightClick(event)==True) and (len(self.output_tree.is_market_holding_col_row())>0) and
+                    (self.output_tree.is_parent_item_selected() == False)):
                     try:
                         self.popup_menu_righclick.tk_popup(event.x_root, event.y_root, 0)
                     finally:
