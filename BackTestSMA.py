@@ -73,20 +73,26 @@ class BackTestSMA:
         for child in allchildrows:
             if(str(child).upper().find(self.treeofscripts.HOLDINGVAL) >= 0):
                 row_val=self.treeofscripts.item(child, 'values')
-                scriptQty += int(row_val[2])
+                #scriptQty += int(row_val[2])
                 d = {'PurchaseDate': [row_val[1]], 'PurchasePrice':[row_val[0]], 
-                    'PurchaseQTY':[str(scriptQty)], 'Commission':[row_val[3]], 
+                    'PurchaseQTY':[row_val[2]], 'Commission':[row_val[3]], 
                     'CostofInvestment':[row_val[4]], 'CurrentValue':[row_val[5]],
                     'Status':[row_val[6]]}
                 #tempDF = DataFrame.from_dict(data=d, orient='index')
                 tempDF = DataFrame(d)
                 #tempDF = tempDF.transpose()
                 self.dfholdingvalues=self.dfholdingvalues.append(tempDF, ignore_index=True)
-        self.dfholdingvalues.set_index('PurchaseDate')
+        #self.dfholdingvalues.set_index('PurchaseDate')
         convert_type={'PurchaseQTY':float}
         self.dfholdingvalues = self.dfholdingvalues.astype(convert_type)
         convert_type={'Commission':float}
         self.dfholdingvalues = self.dfholdingvalues.astype(convert_type)
+        self.dfholdingvalues.sort_values('PurchaseDate', axis=0, inplace=True, ignore_index=True)
+        sumoflastrows=0
+        imax = self.dfholdingvalues.shape[0]
+        for i in range(imax):
+            self.dfholdingvalues['PurchaseQTY'][i]=self.dfholdingvalues['PurchaseQTY'][i]+sumoflastrows
+            sumoflastrows=self.dfholdingvalues['PurchaseQTY'][i]
 
     """ setCurrentValInMarketDF
         In this method we will need to add three columns to the Alpha returned DF
@@ -119,6 +125,7 @@ class BackTestSMA:
         imax = self.dfholdingvalues.shape[0]
         i = 0
 
+        # we will only use data from the date of first purchase
         self.dfScript = self.dfScript.loc[(self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][0])]
 
         for i in range(imax):
@@ -222,11 +229,11 @@ class BackTestSMA:
         d
     """
     def plotPerformanceGraphTS(self):
-        f_temp=Figure(figsize=(15, 6), dpi=80, facecolor='w', edgecolor='k')
+        f_temp=Figure(figsize=(30, 30), dpi=80, facecolor='w', edgecolor='k')
 
         #first 3 & 1 means we want to show 3 graphs in 1 column
         #last 1 indicates the sequence number of the current graph
-        ax1 = plt.subplot(311) 
+        ax1 = plt.subplot(221) 
         
         #first plot the self portfolio performance using CurrentVal columns in dfScript
         plt.plot(self.dfScript['CurrentVal'], label='Portfolio price')
@@ -242,7 +249,8 @@ class BackTestSMA:
         plt.grid()
 
         # now plot 2nd set of graph
-        ax2 = plt.subplot(312, sharex=ax1)
+        #ax2 = plt.subplot(312, sharex=ax1)
+        ax2 = plt.subplot(222)
         plt.plot(self.dfScript['Close'], label='Daily Close Price')
         
         plt.plot(buys.index, self.dfScript['Close'].loc[buys.index], marker="*", markersize=10, color='b', label='Buy transaction', linestyle='None')
@@ -266,11 +274,21 @@ class BackTestSMA:
         plt.grid()
 
         # Now plot 3rd set of graph for cum returns
-        ax3 = plt.subplot(313, sharex=ax1)
+        #ax3 = plt.subplot(313, sharex=ax1)
+        ax3 = plt.subplot(223)
         plt.plot(self.dfScript['CumReturns'], label='Cumulative Returns')
         plt.ylabel('Cumulative Returns')
         plt.legend()    #(loc='upper left')
         plt.grid()
+
+        # Now plot 3rd set of graph for cum returns
+        #ax3 = plt.subplot(313, sharex=ax1)
+        ax3 = plt.subplot(224)
+        plt.plot(self.dfScript['Returns'], label='Daily Returns')
+        plt.ylabel('Daily Returns')
+        plt.legend()    #(loc='upper left')
+        plt.grid()
+
         plt.suptitle(self.script)
         plt.show()
 
@@ -285,7 +303,10 @@ class BackTestSMA:
             return
 
         try:
-            self.dfScript, meta_data = self.ts.get_daily(symbol=self.script)
+            self.dfScript, meta_data = self.ts.get_daily(symbol=self.script, outputsize='full')
+            print(self.dfScript)
+            self.dfScript.sort_index(axis=0, inplace=True)
+            print(self.dfScript)
         except ValueError as error:
             msgbx.showerror("Alpha Vantage error", error)
             return
@@ -295,7 +316,7 @@ class BackTestSMA:
         self.plotPerformanceGraphTS()
 
 
-        """ Method - getData(self):
+        """ Method - getData(self): Not used
             get_daily_adjusted returns data and metadata in DF
             data format example: "Time Series (Daily)": {
             "2020-03-03": {
@@ -319,7 +340,6 @@ class BackTestSMA:
                 "8. split coefficient": "1.0000"
             }}
         """
-
     def getData(self):
         self.dfScript, meta_data = self.ts.get_daily_adjusted(self.script)
         records = {
@@ -680,6 +700,9 @@ class BackTestSMA:
         #self.dfScript.plot()
         #plt.show()
     
+    """  plotgraphs - Not used
+            s
+    """
     def plotgraphs(self):
         f_temp=Figure(figsize=(15, 6), dpi=80, facecolor='w', edgecolor='k')
 

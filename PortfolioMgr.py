@@ -378,10 +378,12 @@ class PortfolioManager:
             f_temp=Figure(figsize=(15, 6), dpi=80, facecolor='w', edgecolor='k')
 
             #portfolio value
-            ax1 = plt.subplot(211)
+            #ax1 = plt.subplot(211)
+            ax1 = plt.subplot(111)
             plt.plot(aapl_data['4. close'], label='Daily stock price')
-            plt.ylabel('Daily Stock Price')
-            plt.legend(loc='upper left')
+            #plt.ylabel('Daily Stock Price')
+            #plt.legend(loc='upper left')
+            plt.legend()
             plt.grid()
             for eachrow in listpurchasprice:
                 if ((eachrow[0] != '') and (eachrow[1] != '')):
@@ -390,12 +392,13 @@ class PortfolioManager:
                 #plt.axhline(float(eachrow[0]), color='y') # will draw a horizontal line at purchase price
                 #plt.axvline(mdates.datestr2num(eachrow[1]), color='y')
 
-            plt.subplot(212, sharex=ax1)
+            #plt.subplot(212, sharex=ax1)
             plt.plot(aapl_sma['SMA'], label='SMA')
 
             #plt.xlabel('Date')
-            plt.ylabel('Simple Moving Average')
-            plt.legend(loc='upper left')
+            #plt.ylabel('Simple Moving Average')
+            #plt.legend(loc='upper left')
+            plt.legend()
             plt.grid()
 
             plt.suptitle(script_name)
