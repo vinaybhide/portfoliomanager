@@ -19,6 +19,8 @@ from datetime import date
 from ScriptTree import *
 from addnewmodifyscript import *
 from BackTestSMA import *
+from getquote import *
+
 class PortfolioManager:
     def __init__(self):
         super().__init__()
@@ -47,17 +49,17 @@ class PortfolioManager:
         self.root.config(menu=self.menu)
         # add file menu
         self.file_menu=Menu(self.menu, tearoff=0)
-        self.file_menu.add_command(label="Open Portfolio", command=self.OpenPortfolio)
-        self.file_menu.add_command(label="Save Portfolio", command=self.SavePortfolio)
+        self.file_menu.add_command(label="Open Portfolio", command=self.menuOpenPortfolio)
+        self.file_menu.add_command(label="Save Portfolio", command=self.menuSavePortfolio)
         self.file_menu.add_separator()
         self.file_menu.add_command(label="Exit", command=self.root.destroy)
         self.menu.add_cascade(label='File', menu=self.file_menu)
 
         # add manage script menu
         self.script_menu=Menu(self.menu, tearoff=0)
-        self.script_menu.add_command(label="Add New Script", command=self.AddScript)
-        self.script_menu.add_command(label="Refresh Selected Script with Market Price", command=self.RefreshScriptData)
-        self.script_menu.add_command(label="Delete Selected Script from Portfolio", command=self.DeleteSelectedScriptFromPortfolio)
+        self.script_menu.add_command(label="Add New Script", command=self.menuAddScript)
+        self.script_menu.add_command(label="Refresh Selected Script with Market Price", command=self.menuRefreshScriptData)
+        self.script_menu.add_command(label="Delete Selected Script from Portfolio", command=self.menuDeleteSelectedScriptFromPortfolio)
         self.menu.add_cascade(label='Manage Portfolio', menu=self.script_menu)
 
         # add script analysis menu
@@ -72,7 +74,7 @@ class PortfolioManager:
 
         # add help menu
         self.help_menu=Menu(self.menu, tearoff=0)
-        self.help_menu.add_command(label="Test Mode (On/Off)", command=self.SetTestMode)
+        self.help_menu.add_command(label="Test Mode (On/Off)", command=self.menuSetTestMode)
         self.menu.add_cascade(label='Help', menu=self.help_menu)
 
         # plot variable used on single & double click of TreeView row
@@ -84,9 +86,9 @@ class PortfolioManager:
         self.output_tree = ScriptTreeView(self.content, self.ts, self.ti, self.f, self.bool_test, self.output_canvas, self.toolbar, selectmode='browse')
 
         self.popup_menu_righclick = Menu(self.menu, tearoff=0)
-        self.popup_menu_righclick.add_command(label="Delete", command=self.DeleteSelectedScript)
-        self.popup_menu_righclick.add_command(label="Modify", command=self.ModifySelectedScript)
-        self.popup_menu_righclick.add_command(label="Performance Graph", command=self.ShowScriptPerformanceGraph)
+        self.popup_menu_righclick.add_command(label="Delete", command=self.menuDeleteSelectedScript)
+        self.popup_menu_righclick.add_command(label="Modify", command=self.menuModifySelectedScript)
+        self.popup_menu_righclick.add_command(label="Performance Graph", command=self.menuShowScriptPerformanceGraph)
         self.output_tree.bind('<Button-3>', self.OnRightClick)
 
         self.output_tree.grid(row=0, column=0, rowspan=1, columnspan=11, sticky=(N,E, W, S))
@@ -190,9 +192,9 @@ class PortfolioManager:
         if(self.output_counter > 0):
             self.output_counter = 1
 
-    """Method - AddScript
+    """Method - menuAddScript
         Adds a new script to the tree view """
-    def AddScript(self):
+    def menuAddScript(self):
         dnewscript = dict()
         dnewscript = classAddNewModifyScript(master=self.content).show()
         # returns dictionary - {'Exchange': 'BSE', 'Symbol': 'LT', 'Price': '1000', 'Date': '2020-02-22', 'Quantity': '10', 'Commission': '1', 'Cost': '10001.0'}
@@ -210,8 +212,8 @@ class PortfolioManager:
         else:
             msgbx.showerror("Add Script", "Error: Please provide exchange and symbol")
 
-    """ DeleteSelectedScriptFromPortfolio """
-    def DeleteSelectedScriptFromPortfolio(self):
+    """ menuDeleteSelectedScriptFromPortfolio """
+    def menuDeleteSelectedScriptFromPortfolio(self):
             item = self.output_tree.get_parent_item()
             if(len(item) > 0):
                 try:
@@ -223,9 +225,9 @@ class PortfolioManager:
                     msgbx.showerror('Delete Error', "Selected entry could not be deleted due to error:-" + str(e))
                     return
 
-    """ Method - RefreshScriptData
+    """ Method - menuRefreshScriptData
         Looks up the market data and refreshes the same along with updating existing holding records"""
-    def RefreshScriptData(self):
+    def menuRefreshScriptData(self):
         script_name = self.output_tree.get_parent_item()
         if(len(script_name) <=0):
             msgbx.showwarning("Warning", "Please select valid row")
@@ -234,8 +236,8 @@ class PortfolioManager:
                         "Purchase Qty="+'', "Commission Paid="+'', "Cost of Investment="+'')
 
 
-    """ModifySelectedScript"""
-    def ModifySelectedScript(self):
+    """menuModifySelectedScript"""
+    def menuModifySelectedScript(self):
         rowid = self.output_tree.is_market_holding_col_row()
         
         if(len(rowid) <= 0):
@@ -264,11 +266,11 @@ class PortfolioManager:
         else:
             msgbx.showerror("Modify Script", "Error: Please provide value for all fields")
 
-    """ Method - DeleteSelectedScript
+    """ Method - menuDeleteSelectedScript
         Deletes selection. If parent script is selected everything is deleted
         else individual row under parent is selected
         if selection is MARKETCOL or HOLDINGCOL then nothing will be deleted"""
-    def DeleteSelectedScript(self):
+    def menuDeleteSelectedScript(self):
             item = self.output_tree.is_market_holding_col_row()
             if(len(item) > 0):
                 try:
@@ -280,8 +282,8 @@ class PortfolioManager:
                     msgbx.showerror('Delete Error', "Selected entry could not be deleted due to error:-" + str(e))
                     return
 
-    """ ShowScriptPerformanceGraph - called on right click menu selection """
-    def ShowScriptPerformanceGraph(self):
+    """ menuShowScriptPerformanceGraph - called on right click menu selection """
+    def menuShowScriptPerformanceGraph(self):
         script_name = self.output_tree.get_parent_item()
         if(len(script_name) <=0):
             msgbx.showwarning("Warning", "Please select valid row")
@@ -295,6 +297,7 @@ class PortfolioManager:
 
     # command handler for stock quote button
     def menuGetStockQuote(self):
+        obj = classGetQuote(master=self.content).show()
         return;
 
     # command handler for intra day
@@ -471,7 +474,7 @@ class PortfolioManager:
             plt.grid()
             plt.show()
 
-    def SetTestMode(self):
+    def menuSetTestMode(self):
         if (self.bool_test):
             self.bool_test = False
             self.output_tree.btestmode = False
@@ -487,9 +490,9 @@ class PortfolioManager:
         # the file will be in following format
         #exchange:scriptname,Purchase Price=###.##,Purchase Date=YYYY-MM-DD,Purchase Qty=##.##,Commission Paid=##.##,Cost of Investment=####.##
 
-    """Method - OpenPortfolio
+    """Method - menuOpenPortfolio
         Opens a valid portfolio file"""
-    def OpenPortfolio(self):
+    def menuOpenPortfolio(self):
             openfilehandle=askopenfile('r', initialdir = "/", title = "Open portfolio file to load portfolio",filetypes = (("csv files","*.csv"),("all files","*.*")) )
             if openfilehandle is not None:
                 list_scripts=openfilehandle.readlines()
@@ -505,7 +508,7 @@ class PortfolioManager:
                         msgbx.showerror("Open portfolio", "Error->Input file not in correct format." +"\n" + "Each line must be in the format of ScriptName,PurchasePrice,PurchaseDate")
                         return
 
-    """ method SavePortfolio       
+    """ method menuSavePortfolio       
         # the tree is in following format for each script
         # + Exchange:Script
         #       Market Data     col1 col2....
@@ -515,7 +518,7 @@ class PortfolioManager:
         #       Holding Value_2 val1 val2....
         # the file will be in following format
         #exchange:scriptname,Purchase Price=###.##,Purchase Date=YYYY-MM-DD,Purchase Qty=##.##,Commission Paid=##.##,Cost of Investment=####.## """
-    def SavePortfolio(self):
+    def menuSavePortfolio(self):
             savefilehandle = asksaveasfile(initialdir = "/",title = "Select file to save portfolio scripts",filetypes = (("csv files","*.csv"),("all files","*.*")))
             # savefilehandle = open(savefilename, 'w')
             scripttowrite = self.output_tree.get_children()
