@@ -37,13 +37,26 @@ class classGetQuote(Toplevel):
 
         #check box buttons
         self.bdaily = BooleanVar()
-        self.bsma = BooleanVar()
-        self.bapo = BooleanVar()
         self.bintra = BooleanVar()
+        self.bsma = BooleanVar()
+        self.bema = BooleanVar()
+        self.bvwap = BooleanVar()
+        self.bmacd = BooleanVar()
+        self.brsi = BooleanVar()
+        self.badx = BooleanVar()
+        self.baroon = BooleanVar()
+        self.brsi = BooleanVar()
+
         self.bdaily.set(False)
-        self.bsma.set(False)
-        self.bapo.set(False)
         self.bintra.set(False)
+        self.bsma.set(False)
+        self.bema.set(False)
+        self.bvwap.set(False)
+        self.bmacd.set(False)
+        self.brsi.set(False)
+        self.badx.set(False)
+        self.baroon.set(False)
+        self.brsi.set(False)
 
         self.frame1 = ttk.Frame(self, borderwidth=5, relief="sunken") #, width=200, height=100)
         self.frame2 = ttk.Frame(self, borderwidth=5, relief="sunken") #, width=200, height=100)
@@ -81,14 +94,19 @@ class classGetQuote(Toplevel):
 
         self.btn_search_script = ttk.Button(self, text="Search Script", command=self.btnSearchScript)
         self.btn_get_quote = ttk.Button(self, text="Get Quote", command=self.btnGetQuote)
-        self.btn_get_daily_close = ttk.Button(self, text="Get Daily Close", command=self.btnGetDailyClose)
+        self.btn_get_daily_close = ttk.Button(self, text="Show selected graphs", command=self.btnGetDailyClose)
         self.btn_cancel = ttk.Button(self, text="Cancel", command=self.btnCancel)
         self.btn_add_script = ttk.Button(self, text="Add script", command=self.btnAddScript)
 
-        self.checkdaily = ttk.Checkbutton(self.frame1, text="Get Daily", variable=self.bdaily, onvalue=True)
-        self.checksmo = ttk.Checkbutton(self.frame1, text="SMA", variable=self.bsma, onvalue=True)
-        self.checkapo = ttk.Checkbutton(self.frame1, text="APO", variable=self.bapo, onvalue=True)
+        self.checkdaily = ttk.Checkbutton(self.frame1, text="Daily close", variable=self.bdaily, onvalue=True)
         self.checkintra = ttk.Checkbutton(self.frame1, text="Intra day", variable=self.bintra, onvalue=True)
+        self.checksma = ttk.Checkbutton(self.frame1, text="SMA", variable=self.bsma, onvalue=True)
+        self.checkema = ttk.Checkbutton(self.frame1, text="EMA", variable=self.bema, onvalue=True)
+        self.checkvwap = ttk.Checkbutton(self.frame1, text="VWAP", variable=self.bvwap, onvalue=True)
+        self.checkmacd = ttk.Checkbutton(self.frame1, text="MACD", variable=self.bmacd, onvalue=True)
+        self.checkrsi = ttk.Checkbutton(self.frame1, text="RSI", variable=self.brsi, onvalue=True)
+        self.checkadx = ttk.Checkbutton(self.frame1, text="ADX", variable=self.badx, onvalue=True)
+        self.checkaroon = ttk.Checkbutton(self.frame1, text="AROON", variable=self.baroon, onvalue=True)
 
         self.search_symbol_label.grid_configure(row=0, column=0, sticky=(N, E), padx=5, pady=5)
         self.search_symbol_combo.grid_configure(row=0, column=1, sticky=(N,S,E,W), columnspan = 3, padx=5, pady=5)
@@ -99,11 +117,17 @@ class classGetQuote(Toplevel):
         self.frame1.grid_configure(row=0, column=7,columnspan=8, rowspan=4, sticky=(N, S, E, W), padx=5, pady=5)
         self.checkdaily.grid_configure(row=0, column=0, sticky=(W))
         self.checkintra.grid_configure(row=0, column=1, sticky=(W))
-        self.checksmo.grid_configure(row=0, column=2, sticky=(W))
-        self.checkapo.grid_configure(row=0, column=3, sticky=(W))
+        self.checksma.grid_configure(row=0, column=2, sticky=(W))
+        self.checkema.grid_configure(row=1, column=0, sticky=(W))
+        self.checkvwap.grid_configure(row=1, column=1, sticky=(W))  
+        self.checkmacd.grid_configure(row=1, column=2, sticky=(W))
+        self.checkrsi.grid_configure(row=2, column=0, sticky=(W))
+        self.checkadx.grid_configure(row=2, column=1, sticky=(W))
+        self.checkaroon.grid_configure(row=2, column=2, sticky=(W))
+
 
         self.btn_get_daily_close.grid_configure(row=0, column=15, padx=5, pady=5)
-        self.btn_cancel.grid_configure(row=0, column=16, padx=5, pady=5)
+        self.btn_cancel.grid_configure(row=2, column=15, padx=5, pady=5)
 
         self.frame2.grid_configure(row=1, column=0, columnspan=7, rowspan=3, sticky=(N, S, E, W), padx=5, pady=5)
         self.open_label.grid_configure(row=1, column=0)#, sticky='NE')
@@ -267,27 +291,76 @@ class classGetQuote(Toplevel):
                 ax1.legend()
                 graphctr += 1
 
-            #sma
-            if(self.bsma.get() == True):
-                dfdata, dfmetadata = ti.get_sma(symbol=self.script)
-                self.f.add_subplot(3,3,graphctr, label='Simple moving avg', 
-                    ylabel='SMA').plot(dfdata['SMA'], label='Simple moving avg')
-                graphctr += 1
-
             #intraday
             if(self.bintra.get() == True):
                 dfdata, dfmetadata = ts.get_intraday(symbol=self.script)
-                self.f.add_subplot(3,3,graphctr, label='Intra-day close', 
-                    ylabel='Intraday close').plot(dfdata['4. close'], label='Intra-day close')
+                ax2=self.f.add_subplot(3,3,graphctr, label='Intra-day close', 
+                    ylabel='Intraday close')
+                ax2.plot(dfdata['4. close'], label='Intra-day close')
+                ax2.legend()
                 graphctr += 1
 
-            """
-                The Absolute Price Oscillator displays the difference between two exponential moving averages of a security's price and is expressed as an absolute value. It rates the trends strength in relation to the moving between the two moving averages with short-term momentum being the catalyst.
-            """
-            if(self.bapo.get() == True):
-                dfdata, dfmetadata = ti.get_apo(symbol=self.script)
-                self.f.add_subplot(3,3,graphctr, label='APO', 
-                    ylabel='APO').plot(dfdata['APO'], label='APO')
+            #sma
+            if(self.bsma.get() == True):
+                dfdata, dfmetadata = ti.get_sma(symbol=self.script)
+                ax3 = self.f.add_subplot(3,3,graphctr, label='Simple moving avg', 
+                    ylabel='SMA')
+                ax3.plot(dfdata['SMA'], label='Simple moving avg')
+                ax3.legend()
+                graphctr += 1
+
+            #ema
+            if(self.bema.get() == True):
+                dfdata, dfmetadata = ti.get_ema(symbol=self.script)
+                ax4 = self.f.add_subplot(3,3,graphctr, label='Exponential moving avg', 
+                    ylabel='EMA')
+                ax4.plot(dfdata['EMA'], label='Exponential moving avg')
+                ax4.legend()
+                graphctr += 1
+
+            #vwap
+            if(self.bvwap.get() == True):
+                dfdata, dfmetadata = ti.get_vwap(symbol=self.script)
+                ax5 = self.f.add_subplot(3,3,graphctr, label='Volume weighted avg price', 
+                    ylabel='VWAP')
+                ax5.plot(dfdata['VWAP'], label='Exponential moving avg')
+                ax5.legend()
+                graphctr += 1
+
+            #macd
+            if(self.bmacd.get() == True):
+                dfdata, dfmetadata = ti.get_macd(symbol=self.script)
+                ax6 = self.f.add_subplot(3,3,graphctr, label='Moving avg convergence/divergence', 
+                    ylabel='MACD')
+                ax6.plot(dfdata, label='Moving avg convergence/divergence')
+                ax6.legend()
+                graphctr += 1
+
+            #rsi
+            if(self.brsi.get() == True):
+                dfdata, dfmetadata = ti.get_rsi(symbol=self.script)
+                ax7 = self.f.add_subplot(3,3,graphctr, label='Relative strength index', 
+                    ylabel='RSI')
+                ax7.plot(dfdata, label='Relative strength index')
+                ax7.legend()
+                graphctr += 1
+
+            #adx
+            if(self.badx.get() == True):
+                dfdata, dfmetadata = ti.get_adx(symbol=self.script)
+                ax8 = self.f.add_subplot(3,3,graphctr, label='Average directional moving index', 
+                    ylabel='ADX')
+                ax8.plot(dfdata, label='Average directional moving index')
+                ax8.legend()
+                graphctr += 1
+
+            #aroon
+            if(self.baroon.get() == True):
+                dfdata, dfmetadata = ti.get_aroon(symbol=self.script)
+                ax9 = self.f.add_subplot(3,3,graphctr, label='AROON', 
+                    ylabel='AROON')
+                ax9.plot(dfdata, label='AROON')
+                ax9.legend()
                 graphctr += 1
 
             #self.f.legend() #(loc='upper right')
