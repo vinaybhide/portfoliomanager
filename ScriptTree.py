@@ -221,7 +221,7 @@ class ScriptTreeView(ttk.Treeview):
                 self.insert('', 'end', iid=iid_str, text=str(arg_values_list[0]))
 
                 #now insert the column for alpha
-                idcol = self.insert(iid_str, "end", iid=iid_str+'_MARKETCOL' ,text='From Market')
+                idcol = self.insert(iid_str, "end", iid=iid_str+'_MARKETCOL' ,text='Market')
                 for colid in range(len(arg_heading_list)):
                     self.set(idcol, column=colid+1, value=arg_heading_list[colid])
 
@@ -231,7 +231,7 @@ class ScriptTreeView(ttk.Treeview):
                     self.set(idcol, column=colid+1, value=arg_values_list[colid])
 
                 #now insert the column for self
-                idcol = self.insert(iid_str, "end", iid = iid_str + '_HOLDINGCOL', text='Your holdings')
+                idcol = self.insert(iid_str, "end", iid = iid_str + '_HOLDINGCOL', text='Portfolio')
                 for colid in range(len(arg_self_col_list)):
                     self.set(idcol, column=colid+1, value=arg_self_col_list[colid])
 
@@ -262,7 +262,83 @@ class ScriptTreeView(ttk.Treeview):
 
         self.update()
         return self.output_counter
-    
+
+
+    """Method - get_stock_quote
+        #*args = "Purchase Price=123.33", "Purchase Date=2019-10-10", "Purchase Qty=110", 
+        #   "Commision=10", "Cost of Investment=1111"
+        # Method to get current stock quote for given stock name"""
+    def get_stock_quote(self, argHoldingIID = '', argStockName='', *args):
+        #global bool_test
+        dfstockname = DataFrame()
+        listselfcol = list()
+        listselfval = list()
+        if(len(args) == 5):
+            argctr = 0
+            for eacharg in args:
+                argsplit = eacharg.split('=')
+                listselfcol.insert(argctr, argsplit[0].strip())
+                listselfval.insert(argctr, argsplit[1].strip())
+                argctr += 1
+          
+            try:
+                listindex = listselfcol.index('Purchase Price')
+                sPurchasePrice = listselfval[listindex]
+                listindex = listselfcol.index('Purchase Date')
+                sPurchaseDate = listselfval[listindex]
+                listindex = listselfcol.index('Purchase Qty')
+                sQty = listselfval[listindex]
+                listindex = listselfcol.index('Commission Paid')
+                sCommissionPaid = listselfval[listindex]
+                listindex = listselfcol.index('Cost of Investment')
+                sCost = listselfval[listindex]
+            except ValueError as verr:
+                msgbx.showerror("Error", "Insufficient arguments passed in *args")
+                return
+        else:
+            msgbx.showerror("Error", "Insufficient arguments passed in *args")
+            return
+        
+        if (self.btestmode==True):
+            dfstockname = pd.read_csv("E:\\python_projects\\TestData\\global_quote.csv")
+        else:
+            try:
+                dfstockname, meta_data = self.ts.get_quote_endpoint(argStockName)
+            except ValueError as error:
+                msgbx.showerror("Alpha Vantage Error", error)
+                return
+        currclosingprice = float(dfstockname.values[0][4])
+        status = ''
+        currentvalue=0.00
+        if((len(sQty) > 0) and (len(sCost) > 0)):
+            currentvalue = currclosingprice * float(sQty)
+            if(currentvalue > float(sCost)):
+                status = '↑'
+            elif (currentvalue < float(sCost)):
+                status = '↓'
+            elif (currentvalue == float(sCost)):
+                status = '↔'
+            
+        listselfcol.insert(argctr, 'Current Value')
+        listselfval.insert(argctr, str(currentvalue))
+        argctr += 1
+        listselfcol.insert(argctr, 'Status')
+        listselfval.insert(argctr, status)  #alt 24 ↑, alt 25 ↓, alt 29 ↔
+
+        dfcolumnlen = len(dfstockname.columns)
+        heading_list=list(dfstockname.columns[0:dfcolumnlen])
+
+        if(dfcolumnlen > len(listselfcol)):
+            self.output_counter = self.print_heading(dfcolumnlen, self.output_counter)
+        else:
+            self.output_counter = self.print_heading(len(listselfcol), self.output_counter)
+        
+        values_list=list((dfstockname.values[0:dfcolumnlen])[0])
+        #commenting for heirarchy
+        #self.print_values(values_list)
+        self.output_counter = self.print_values(argHoldingIID, heading_list, values_list, listselfcol, listselfval, self.output_counter)
+
+
     """method - get_parent_item
         returns the parent item id of the selected item.
         if the selected item is child then will get its parent iid and return the same
@@ -290,7 +366,7 @@ class ScriptTreeView(ttk.Treeview):
                 item = self.selection()[0]
             else:
                 item = argitem
-            #if a parent BSE:HDFC is already selected then .parent will return ''
+            #if a parent HDFC.BSE is already selected then .parent will return ''
             parentitem = self.parent(item)
         except IndexError:
             return False
