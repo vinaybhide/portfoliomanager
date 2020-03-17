@@ -91,7 +91,7 @@ class BackTestSMA:
         sumoflastrows=0
         imax = self.dfholdingvalues.shape[0]
         for i in range(imax):
-            self.dfholdingvalues['PurchaseQTY'][i]=self.dfholdingvalues['PurchaseQTY'][i]+sumoflastrows
+            self.dfholdingvalues['PurchaseQTY'][i]=(self.dfholdingvalues['PurchaseQTY'][i])+sumoflastrows
             sumoflastrows=self.dfholdingvalues['PurchaseQTY'][i]
 
     """ setCurrentValInMarketDF
@@ -229,7 +229,7 @@ class BackTestSMA:
         d
     """
     def plotPerformanceGraphTS(self):
-        f_temp=Figure(figsize=(30, 30), dpi=80, facecolor='w', edgecolor='k')
+        f_temp=Figure(figsize=(60, 60), dpi=80, facecolor='w', edgecolor='k')
 
         #first 3 & 1 means we want to show 3 graphs in 1 column
         #last 1 indicates the sequence number of the current graph
