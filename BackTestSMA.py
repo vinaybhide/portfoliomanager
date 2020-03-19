@@ -1,3 +1,4 @@
+#v0.4
 """ Class - cBackTestSMA
 will accept 
     Alpha vantage key, 
@@ -739,7 +740,6 @@ class BackTestSMA:
 
         plt.suptitle(self.script)
         plt.show()
-
 
 """if __name__ == "__main__":
     obj = BackTestSMA('XXXX', 'BSE:HDFC', str(date.today()), '2020-02-10', 5, 10)
