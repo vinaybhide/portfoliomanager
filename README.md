@@ -34,3 +34,4 @@ v0.5 - Bug fixes and features
    5. Correction - moved  Analyze Script->Show historical proce series of selected script to Mouse right click->Daily closing Vs SMA
          Added 20 day SMA graph in the same plot
    6. Added graphs on right click on selected script. Handling of movement is also taken care.
+v0.6 - Added test data support via downloaded file for all except get_quote_endpoint and search_endpoint
