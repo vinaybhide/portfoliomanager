@@ -1,3 +1,4 @@
+#v0.5
 #v0.4
 from tkinter import *
 from tkinter import ttk
@@ -269,7 +270,7 @@ class ScriptTreeView(ttk.Treeview):
         #*args = "Purchase Price=123.33", "Purchase Date=2019-10-10", "Purchase Qty=110", 
         #   "Commision=10", "Cost of Investment=1111"
         # Method to get current stock quote for given stock name"""
-    def get_stock_quote(self, argHoldingIID = '', argStockName='', *args):
+    def get_stock_quote(self, argHoldingIID = '', argStockName='', argPriceDf=DataFrame(), *args):
         #global bool_test
         dfstockname = DataFrame()
         listselfcol = list()
@@ -304,7 +305,10 @@ class ScriptTreeView(ttk.Treeview):
             dfstockname = pd.read_csv("E:\\python_projects\\TestData\\global_quote.csv")
         else:
             try:
-                dfstockname, meta_data = self.ts.get_quote_endpoint(argStockName)
+                if(argPriceDf.empty == True):
+                    dfstockname, meta_data = self.ts.get_quote_endpoint(argStockName)
+                else:
+                    dfstockname = argPriceDf
             except ValueError as error:
                 msgbx.showerror("Alpha Vantage Error", error)
                 return

@@ -1,3 +1,4 @@
+#v0.5
 #v0.4
 """ Class - cBackTestSMA
 will accept 
@@ -92,8 +93,10 @@ class BackTestSMA:
         sumoflastrows=0
         imax = self.dfholdingvalues.shape[0]
         for i in range(imax):
-            self.dfholdingvalues['PurchaseQTY'][i]=(self.dfholdingvalues['PurchaseQTY'][i])+sumoflastrows
-            sumoflastrows=self.dfholdingvalues['PurchaseQTY'][i]
+            #self.dfholdingvalues['PurchaseQTY'][i]=(self.dfholdingvalues['PurchaseQTY'][i])+sumoflastrows
+            #sumoflastrows=self.dfholdingvalues['PurchaseQTY'][i]
+            self.dfholdingvalues.loc[i, 'PurchaseQTY'] = self.dfholdingvalues.loc[i, 'PurchaseQTY']+sumoflastrows
+            sumoflastrows=self.dfholdingvalues.loc[i, 'PurchaseQTY']
 
     """ setCurrentValInMarketDF
         In this method we will need to add three columns to the Alpha returned DF
@@ -127,9 +130,10 @@ class BackTestSMA:
         i = 0
 
         # we will only use data from the date of first purchase
-        self.dfScript = self.dfScript.loc[(self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][0])]
+        #self.dfScript = self.dfScript.loc[(self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][0])]
+        self.dfScript = self.dfScript.loc[(self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][imax-1])]
 
-        for i in range(imax):
+        for i in range(imax-1, imax):
             if(i < imax-1): #we have still not last row
                 self.dfScript.loc[((self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][i]) & 
                                 (self.dfScript.index[:] < self.dfholdingvalues['PurchaseDate'][i+1])), 'PurchaseDate']=self.dfholdingvalues['PurchaseDate'][i]
@@ -219,13 +223,14 @@ class BackTestSMA:
         # the buying signal.
         self.dfScript['Returns']=self.dfScript['Returns']*self.dfScript['Order']
         self.dfScript.loc[self.dfScript.index[:], 'Returns']=self.dfScript['Returns']*self.dfScript['Order']
-
+        
         #Since we reinvest all returns, we need to take a cumulative product
         #  over the last column.
         # it=((it−1)+(it−1)*rt)=(1+rt)*(it−1),i0=1
 
         self.dfScript['CumReturns']=(1+self.dfScript.Returns).cumprod()
-
+        print(self.dfScript)
+    
     """ plotPerformanceGraphTS
         d
     """
@@ -243,7 +248,7 @@ class BackTestSMA:
         buys=self.dfScript.loc[(self.dfScript['Status'] != ''), :]
         plt.plot(buys.index, self.dfScript['CurrentVal'].loc[buys.index], marker="*", markersize=10, color='b', label='Buy transaction', linestyle='None')
         for i in range(len(buys.index)):
-            plt.annotate('Qty='+ str(buys['PurchaseQTY'][i]) + " "+buys['Status'][i], (mdates.datestr2num(buys['PurchaseDate'][i]), buys['CurrentVal'][i]),
+            plt.annotate('Total Qty='+ str(buys['PurchaseQTY'][i]) + " "+buys['Status'][i], (mdates.datestr2num(buys['PurchaseDate'][i]), buys['CurrentVal'][i]),
                             xytext=(15,15), textcoords='offset points', arrowprops=dict(arrowstyle='-|>'))
         plt.ylabel("Portfolio Value")
         plt.legend()    #(loc='upper left')
@@ -305,9 +310,7 @@ class BackTestSMA:
 
         try:
             self.dfScript, meta_data = self.ts.get_daily(symbol=self.script, outputsize='full')
-            print(self.dfScript)
             self.dfScript.sort_index(axis=0, inplace=True)
-            print(self.dfScript)
         except ValueError as error:
             msgbx.showerror("Alpha Vantage error", error)
             return
@@ -341,7 +344,7 @@ class BackTestSMA:
                 "8. split coefficient": "1.0000"
             }}
         """
-    def getData(self):
+    def getDataNotUsed(self):
         self.dfScript, meta_data = self.ts.get_daily_adjusted(self.script)
         records = {
             "2020-03-03": {
@@ -643,7 +646,6 @@ class BackTestSMA:
         #self.dfScript = pd.DataFrame(records.values(), columns=['1. open', "2. high", "3. low", "4. close", "5. adjusted close", 
         #            "6. volumn", "7. dividend amount", "8. split coefficient"])
         #self.dfScript.index = records.keys()
-        print(self.dfScript)
         #result = DataFrame()
         #select only the date period specified by user
         #self.dfScript.index = pd.datetime(self.dfScript)
@@ -656,10 +658,7 @@ class BackTestSMA:
         self.dfScript=self.dfScript[['5. adjusted close']]
         convert_type={'5. adjusted close':float}
         self.dfScript = self.dfScript.astype(convert_type)
-        print(self.dfScript)
-        print(self.dfScript.dtypes)
         self.dfScript=self.dfScript.rename(columns={'5. adjusted close':'Adj Close'})
-        print(self.dfScript)
         #find the moving average as per the num of days specified by user onadjusted close
         self.dfScript['short_mean']=self.dfScript.rolling(int(self.avgsmall)).mean()['Adj Close']
         self.dfScript['long_mean']=self.dfScript.rolling(int(self.avglarge)).mean()['Adj Close']
@@ -681,7 +680,6 @@ class BackTestSMA:
         #self.dfScript['order'][self.dfScript.short_mean > self.dfScript.long_mean] = 1 #buy signal
         self.dfScript.loc[self.dfScript['short_mean'] > self.dfScript['long_mean'], 'order']=1
         self.dfScript['order']=self.dfScript['order'].shift(1)
-        print(self.dfScript)
         #now we calculare relative returns for each day
         #rt=(pt−(pt−1))/(pt−1)=(pt/(pt−1))−1
         self.dfScript['returns']=(self.dfScript['Adj Close']/((self.dfScript['Adj Close']).shift(1))) - 1
@@ -704,7 +702,7 @@ class BackTestSMA:
     """  plotgraphs - Not used
             s
     """
-    def plotgraphs(self):
+    def plotgraphsNotUsed(self):
         f_temp=Figure(figsize=(15, 6), dpi=80, facecolor='w', edgecolor='k')
 
         #first plot the Adj Close graph
