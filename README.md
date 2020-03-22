@@ -33,3 +33,4 @@ v0.5 - Bug fixes and features
    3. Bugfix-There was a pandas warning while doing cumulative sum of all the holding. Fixed that using .loc
    5. Correction - moved  Analyze Script->Show historical proce series of selected script to Mouse right click->Daily closing Vs SMA
          Added 20 day SMA graph in the same plot
+   6. Added graphs on right click on selected script. Handling of movement is also taken care.
