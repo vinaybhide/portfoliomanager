@@ -1,3 +1,4 @@
+#v0.6
 #v0.5
 #v0.4 - Features as below
 # 1. File->Save current scripts in tree as portfolio  to a file
@@ -49,6 +50,7 @@ from ScriptTree import *
 from addnewmodifyscript import *
 from BackTestSMA import *
 from getquote import *
+from testdata import *
 
 class PortfolioManager:
     def __init__(self):
@@ -94,14 +96,6 @@ class PortfolioManager:
         self.script_menu.add_command(label="Refresh Selected Script with Market Price", command=self.menuRefreshScriptData)
         self.menu.add_cascade(label='Manage Portfolio', menu=self.script_menu)
 
-        # add script analysis menu
-        #self.analyze_menu=Menu(self.menu, tearoff=0)
-        #self.analyze_menu.add_command(label="Get Intra Day", command=self.menuGetIntraDay)
-        #self.analyze_menu.add_command(label="Get Daily Stock", command=self.menuDailyStock)
-        #self.analyze_menu.add_separator()
-        #self.analyze_menu.add_command(label="Compare price Vs SMA", command=self.menuComparePriceSMA)
-        #self.menu.add_cascade(label='Script Analysis', menu=self.analyze_menu)
-
         # add help menu
         self.help_menu=Menu(self.menu, tearoff=0)
         self.help_menu.add_command(label="Test Mode (On/Off)", command=self.menuSetTestMode)
@@ -133,10 +127,10 @@ class PortfolioManager:
         #self.popup_menu_righclick.add_command(label="Intra-day closing Vs 20 SMA", command=self.rightclickmenuIntraDay)
         #self.POSrightclickmenuIntraDay = 6
 
-        self.POSrightclickmenuVWMA=BooleanVar(False)
-        self.popup_menu_righclick.add_checkbutton(label="Volume WMA", onvalue=True, offvalue=False, variable=self.POSrightclickmenuVWMA, command=self.rightclickmenuVWMA)
-        #self.popup_menu_righclick.add_command(label="Volume WMA", command=self.rightclickmenuVWMA)
-        #self.POSrightclickmenuVWMA=7
+        self.POSrightclickmenuVWMP=BooleanVar(False)
+        self.popup_menu_righclick.add_checkbutton(label="Volume WMA", onvalue=True, offvalue=False, variable=self.POSrightclickmenuVWMP, command=self.rightclickmenuVWMP)
+        #self.popup_menu_righclick.add_command(label="Volume WMA", command=self.rightclickmenuVWMP)
+        #self.POSrightclickmenuVWMP=7
 
         self.POSrightclickmenuRSIVsIntra= BooleanVar(False)
         self.popup_menu_righclick.add_checkbutton(label="RSI Vs Intra-day", onvalue=True, offvalue=False, variable=self.POSrightclickmenuRSIVsIntra, command=self.rightclickmenuRSIVsIntra)
@@ -313,7 +307,7 @@ class PortfolioManager:
 
     # command handler for stock quote button
     def menuGetStockQuote(self):
-        obj = classGetQuote(master=self.content, argoutputtree=self.output_tree).show()
+        obj = classGetQuote(master=self.content, argoutputtree=self.output_tree, argIsTest=self.bool_test).show()
         return;
 
     # command handler for intra day
@@ -324,21 +318,6 @@ class PortfolioManager:
     def menuDailyStock(self):
         return True
 
-    def clearandresetGraphs(self, argIndex):
-        #ax = plt.subplot(111)
-        #ax.change_geometry(3,1,1)
-        #first clear the current deselected graph
-        self.ax[argIndex].clear()
-
-        #now shift all graphs below this one above 1 level
-        if(argIndex >= 8): #this is the last graph, so nothing to move up
-            return
-        for each in range(argIndex+1, len(self.dictgraphmenu)): 
-            tempdict = self.dictgraphmenu[each]
-            for key in tempdict:
-                tempdict[key][2] = tempdict[key][2] - 1
-                self.ax[each].change_geometry(tempdict[key][0], tempdict[key][1], tempdict[key][2])
-
     def clearandresetGraphs(self, argDictIndex, argDictKey):
         #ax = plt.subplot(111)
         #ax.change_geometry(3,1,1)
@@ -348,12 +327,6 @@ class PortfolioManager:
             self.ax[argDictIndex].set_visible(False)
 
             if(self.graphctr > 1):
-                """for each in range(argDictIndex+1, len(self.dictgraphmenu)): 
-                    tempdict = self.dictgraphmenu[each]
-                    for key in tempdict:
-                        tempdict[key] = (tempdict[key][0], tempdict[key][1], tempdict[key][2]-1)
-                        self.ax[each].change_geometry(tempdict[key][0], tempdict[key][1], tempdict[key][2])"""
-
                 currdict = self.dictgraphmenu[argDictIndex]
                 for each in range(0, len(self.dictgraphmenu)): 
                     tempdict = self.dictgraphmenu[each]
@@ -363,10 +336,10 @@ class PortfolioManager:
                             self.ax[each].change_geometry(tempdict[key][0], tempdict[key][1], tempdict[key][2])
 
                 self.graphctr -= 1
-                return True
         except Exception as e:
             msgbx.showerror("Clear & Reset Graph", "Exception: " + e)
             return False
+        return True
 
     def getPastDateFromToday(self, argLookbackYears):
         try:
@@ -408,25 +381,23 @@ class PortfolioManager:
             self.POSrightclickmenuDailyVsSMA.set(self.reverseMenutick(self.POSrightclickmenuDailyVsSMA))
             return
 
-        #first find if the graph is already shown on screen
         #menutext = self.popup_menu_righclick.entrycget(self.POSrightclickmenuDailyVsSMA, 'label')
+        #menu.entryconfigure(self.POSrightclickmenuDailyVsSMA, label=menutext[1:])
         
-        #if(menutext.find('√') == 0):
         if(self.POSrightclickmenuDailyVsSMA.get() == False):
             self.clearandresetGraphs(0, 'm1')
             self.setFigureCommonConfig(script_name)
-            #menu.entryconfigure(self.POSrightclickmenuDailyVsSMA, label=menutext[1:])
             return
 
         # Get the data, returns a tuple
         # aapl_data is a pandas dataframe, aapl_meta_data is a dict
-        if self.bool_test:
-            aapl_data = pd.read_csv("E:\\python_projects\\TestData\\daily_MSFT.csv")
-        else:
-            try:
+        try:
+            if self.bool_test:
+                testobj = PrepareTestData()
+                aapl_data = testobj.loadDaily(script_name)
+                aapl_sma = testobj.loadSMA(script_name)
+            else:
                 aapl_data, aapl_meta_data = self.ts.get_daily(symbol=script_name)
-                # Not sure if we need the following line -- commenting for time being
-                # aapl_sma is a dict, aapl_meta_sma also a dict
                 aapl_sma, aapl_meta_sma = self.ti.get_sma(symbol=script_name)
                 
                 #aapl_data=aapl_data.sort_index(axis=0)
@@ -447,44 +418,24 @@ class PortfolioManager:
                         child_val = self.output_tree.item(child, 'values')
                         listpurchasprice.append([child_val[0], child_val[1]])"""
 
-            except ValueError as error:
-                msgbx.showerror("Alpha Vantage error", e)
-                self.POSrightclickmenuDailyVsSMA.set(self.reverseMenutick(self.POSrightclickmenuDailyVsSMA))
-                return
-            try:
-                # Visualization
-                self.ax[0].clear()
-                #self.ax[0].set_visible(True)
-                if self.bool_test:
-                    #0self.f.add_subplot(111, title=script_name, label='Daily close price', 
-                    #0    xlabel='Date', ylabel='Closing price').plot(aapl_data['close'], label='Daily closing price')
-                    self.ax[0]=self.f.add_subplot(self.dictgraphmenu[0]['m1'][0], self.dictgraphmenu[0]['m1'][1], self.graphctr, title=script_name, label='Daily close price', xlabel='Date', ylabel='Closing price', visible=True)
-                    self.ax[0].plot(aapl_data['close'], label='Daily closing price')
-                    self.dictgraphmenu[0]['m1'][2] = self.graphctr
-                    self.graphctr += 1
-                else:
-                    #ax1 replaced by self.ax[0]
-                    self.ax[0] = self.f.add_subplot(self.dictgraphmenu[0]['m1'][0], self.dictgraphmenu[0]['m1'][1], self.graphctr, visible=True)#, title=script_name, label='Daily close price', xlabel='Date', ylabel='Closing price')
-                    self.ax[0].plot(aapl_data['4. close'], label='Close')
-                    self.ax[0].plot(aapl_sma['SMA'], label='20 SMA')
+            # Visualization
+            self.ax[0].clear()
+            #self.ax[0].set_visible(True)
+            self.ax[0] = self.f.add_subplot(self.dictgraphmenu[0]['m1'][0], self.dictgraphmenu[0]['m1'][1], self.graphctr, visible=True)#, title=script_name, label='Daily close price', xlabel='Date', ylabel='Closing price')
+            self.ax[0].plot(aapl_data['4. close'], label='Close')
+            self.ax[0].plot(aapl_sma['SMA'], label='20 SMA')
 
-                    """for eachrow in listpurchasprice:
-                        if ((eachrow[0] != '') and (eachrow[1] != '')):
-                            self.ax[0].annotate(eachrow[0], (mdates.datestr2num(eachrow[1]), float(eachrow[0])),
-                                xytext=(15,15), textcoords='offset points', arrowprops=dict(arrowstyle='-|>'))"""
+            """for eachrow in listpurchasprice:
+                if ((eachrow[0] != '') and (eachrow[1] != '')):
+                    self.ax[0].annotate(eachrow[0], (mdates.datestr2num(eachrow[1]), float(eachrow[0])),
+                        xytext=(15,15), textcoords='offset points', arrowprops=dict(arrowstyle='-|>'))"""
 
-                """self.dictgraphmenu[0]['m1'] = (self.dictgraphmenu[0]['m1'][0], self.dictgraphmenu[0]['m1'][1], self.graphctr)
-                self.graphctr += 1
-                self.ax[0].grid(True)
-                self.ax[0].set_title('Close Vs Daily', size='xx-small')
-                self.ax[0].legend(size='xx-small')"""
-                self.setAxesCommonConfig(0, 'm1', script_name, 'Daily Vs 20 SMA')
-                #self.f.autofmt_xdate()
-                self.setFigureCommonConfig(script_name)
-                #self.menu.entryconfigure(self.POSrightclickmenuDailyVsSMA, label='√' + menutext)
-            except Exception as e:
-                msgbx.showerror('Exception', 'Exception in Daily Vs SMA: ' + str(e))
-                self.POSrightclickmenuDailyVsSMA.set(self.reverseMenutick(self.POSrightclickmenuDailyVsSMA))
+            self.setAxesCommonConfig(0, 'm1', script_name, 'Daily Vs 20 SMA')
+            #self.f.autofmt_xdate()
+            self.setFigureCommonConfig(script_name)
+        except Exception as e:
+            msgbx.showerror('Error', 'Exception in Daily Vs SMA: ' + str(e))
+            self.POSrightclickmenuDailyVsSMA.set(self.reverseMenutick(self.POSrightclickmenuDailyVsSMA))
 
     """ Method - rightclickmenuIntraDay
         Mouse right click- Method shows  intraday close timeseries for selected stock within the app window"""
@@ -507,12 +458,12 @@ class PortfolioManager:
 
         # Get the data, returns a tuple
         # aapl_data is a pandas dataframe, aapl_meta_data is a dict
-        if self.bool_test:
-            return
-            aapl_data = pd.read_csv("E:\\python_projects\\TestData\\daily_MSFT.csv")
-        else:
-            try:
-                aapl_data, aapl_meta_data = self.ts.get_intraday(symbol=script_name)
+        try:
+            if(self.bool_test == True):
+                testobj = PrepareTestData()
+                aapl_data = testobj.loadIntra(script_name)
+            else:
+                aapl_data, aapl_meta_data = self.ts.get_intraday(symbol=script_name, interval='5min')
                 # Not sure if we need the following line -- commenting for time being
                 # aapl_sma is a dict, aapl_meta_sma also a dict
                 #aapl_sma, aapl_meta_sma = self.ti.get_sma(symbol=script_name)
@@ -526,57 +477,38 @@ class PortfolioManager:
                 #sizeofdaily = aapl_data.index.size
                 #aapl_sma = aapl_sma.tail(sizeofdaily)
 
-            except ValueError as error:
-                msgbx.showerror("Alpha Vantage error", e)
-                self.POSrightclickmenuIntraDay.set(self.reverseMenutick(self.POSrightclickmenuIntraDay))
-                return
-
-        try:
             # Visualization
             self.ax[1].clear()
             self.ax[1].set_visible(True)
             #ax1 replaced by self.ax[0]
             self.ax[1] = self.f.add_subplot(self.dictgraphmenu[1]['m2'][0], self.dictgraphmenu[1]['m2'][1], self.graphctr, visible=True)#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
             self.ax[1].plot(aapl_data['4. close'], label='Intra-day')
-            #self.ax[1].plot(aapl_sma['SMA'], label='20 SMA')
 
-            """self.ax[1].grid(True)
-            self.dictgraphmenu[1]['m2'] = (self.dictgraphmenu[1]['m2'][0], self.dictgraphmenu[1]['m2'][1], self.graphctr)
-            self.graphctr += 1
-
-            self.ax[1].set_title('Intra-Day', size='xx-small')
-            self.ax[1].legend(size='xx-small')"""
             self.setAxesCommonConfig(1, 'm2', script_name, 'Intra-day')
 
             self.setFigureCommonConfig(script_name)
-            #self.menu.entryconfigure(self.POSrightclickmenuIntraDay, label='√' + menutext)
         except Exception as e:
-            msgbx.showerror("Alpha Vantage error", e)
+            msgbx.showerror("Error", "Error in IntraDay: " + e)
             self.POSrightclickmenuIntraDay.set(self.reverseMenutick(self.POSrightclickmenuIntraDay))
 
-    def rightclickmenuVWMA(self):
+    def rightclickmenuVWMP(self):
         script_name = self.output_tree.get_parent_item()
         if(len(script_name) <=0):
             msgbx.showwarning("Warning", "Please select valid row")
-            self.POSrightclickmenuVWMA.set(self.reverseMenutick(self.POSrightclickmenuVWMA))
+            self.POSrightclickmenuVWMP.set(self.reverseMenutick(self.POSrightclickmenuVWMP))
             return
 
-        if(self.POSrightclickmenuVWMA.get() == False):
+        if(self.POSrightclickmenuVWMP.get() == False):
             self.clearandresetGraphs(2, 'm3')
             self.setFigureCommonConfig(script_name)
             return
-        if self.bool_test:
-            return
-            aapl_data = pd.read_csv("E:\\python_projects\\TestData\\daily_MSFT.csv")
-        else:
-            try:
+        try:
+            if self.bool_test:
+                testobj = PrepareTestData()
+                data_vwap = testobj.loadVWMP(script_name)
+            else:
                 data_vwap, meta_vwap = self.ti.get_vwap(symbol=script_name)
                 #data_vwap=data_vwap.sort_index(axis=0)
-            except ValueError as error:
-                msgbx.showerror("Alpha Vantage error", e)
-                self.POSrightclickmenuVWMA.set(self.reverseMenutick(self.POSrightclickmenuVWMA))
-                return
-        try:
             # Visualization
             self.ax[2].clear()
             #self.ax[2].set_visible(True)
@@ -585,8 +517,8 @@ class PortfolioManager:
             self.setAxesCommonConfig(2, 'm3', script_name, 'Vol Wt Avg Price')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
-            msgbx.showerror("Alpha Vantage error", e)
-            self.POSrightclickmenuVWMA.set(self.reverseMenutick(self.POSrightclickmenuVWMA))
+            msgbx.showerror("Error", "Error in VWAP: " + e)
+            self.POSrightclickmenuVWMP.set(self.reverseMenutick(self.POSrightclickmenuVWMP))
 
     def rightclickmenuRSIVsIntra(self):
         script_name = self.output_tree.get_parent_item()
@@ -599,21 +531,16 @@ class PortfolioManager:
             self.clearandresetGraphs(3, 'm4')
             self.setFigureCommonConfig(script_name)
             return
-        if self.bool_test:
-            return
-            aapl_data = pd.read_csv("E:\\python_projects\\TestData\\daily_MSFT.csv")
-        else:
-            try:
+        try:
+            if self.bool_test:
+                testobj = PrepareTestData()
+                data_intra = testobj.loadIntra(script_name)
+                data_rsi = testobj.loadRSI(script_name)
+            else:
                 data_intra, meta_intra = self.ts.get_intraday(symbol=script_name)
                 data_rsi, meta_rsi = self.ti.get_rsi(symbol=script_name)
-                
                 #data_intra = data_intra.sort_index(axis=0)
                 #data_rsi = data_rsi.sort_index(axis=0)
-            except ValueError as error:
-                msgbx.showerror("Alpha Vantage error", e)
-                self.POSrightclickmenuRSIVsIntra.set(self.reverseMenutick(self.POSrightclickmenuRSIVsIntra))
-                return
-        try:
             # Visualization
             self.ax[3].clear()
             #self.ax[3].set_visible(True)
@@ -623,9 +550,8 @@ class PortfolioManager:
             self.setAxesCommonConfig(3, 'm4', script_name, 'RSI Vs Intra-day')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
-            msgbx.showerror("Alpha Vantage error", e)
-            self.POSrightclickmenuVWMA.set(self.reverseMenutick(self.POSrightclickmenuVWMA))
-
+            msgbx.showerror("Error", "Error in Intra Vs RSI: " + e)
+            self.POSrightclickmenuVWMP.set(self.reverseMenutick(self.POSrightclickmenuVWMP))
 
     def rightclickmenuRSIVsSMA(self):
         script_name = self.output_tree.get_parent_item()
@@ -638,22 +564,19 @@ class PortfolioManager:
             self.clearandresetGraphs(4, 'm5')
             self.setFigureCommonConfig(script_name)
             return
-        if self.bool_test:
-            return
-            aapl_data = pd.read_csv("E:\\python_projects\\TestData\\daily_MSFT.csv")
-        else:
-            try:
+        
+        try:
+            if self.bool_test:
+                testobj = PrepareTestData()
+                data_sma = testobj.loadSMA(script_name)
+                data_rsi = testobj.loadRSI(script_name)
+            else:
                 data_sma, meta_sma = self.ti.get_sma(symbol=script_name)
                 data_rsi, meta_rsi = self.ti.get_rsi(symbol=script_name)
                 
                 #data_sma = data_sma.sort_index(axis=0)
                 #data_rsi = data_rsi.sort_index(axis=0)
 
-            except ValueError as error:
-                msgbx.showerror("Alpha Vantage error", e)
-                self.POSrightclickmenuRSIVsSMA.set(self.reverseMenutick(self.POSrightclickmenuRSIVsSMA))
-                return
-        try:
             # Visualization
             self.ax[4].clear()
             #self.ax[4].set_visible(True)
@@ -663,7 +586,7 @@ class PortfolioManager:
             self.setAxesCommonConfig(4, 'm5', script_name, 'RSI Vs SMA')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
-            msgbx.showerror("Alpha Vantage error", e)
+            msgbx.showerror("Error", "Error in SMA Vs RSI: " + e)
             self.POSrightclickmenuRSIVsSMA.set(self.reverseMenutick(self.POSrightclickmenuRSIVsSMA))
 
     def rightclickmenuStochasticOscillator(self):
@@ -677,18 +600,15 @@ class PortfolioManager:
             self.clearandresetGraphs(5, 'm6')
             self.setFigureCommonConfig(script_name)
             return
-        if self.bool_test:
-            return
-            aapl_data = pd.read_csv("E:\\python_projects\\TestData\\daily_MSFT.csv")
-        else:
-            try:
-                data_stoch, meta_stoch = self.ti.get_stoch(symbol=script_name)
-                #data_stoch = data_stoch.sort_index(axis=0)
-            except ValueError as error:
-                msgbx.showerror("Alpha Vantage error", e)
-                self.POSrightclickmenuStochasticOscillator.set(self.reverseMenutick(self.POSrightclickmenuStochasticOscillator))
-                return
         try:
+            if self.bool_test:
+                testobj = PrepareTestData()
+                data_stoch = testobj.loadStochasticOscillator(script_name)
+            else:
+                data_stoch, meta_stoch = self.ti.get_stoch(symbol=script_name, interval='daily',
+                    fastkperiod=5, slowkperiod=3, slowdperiod=3, slowkmatype=0, slowdmatype=0)
+                #data_stoch = data_stoch.sort_index(axis=0)
+
             # Visualization
             self.ax[5].clear()
             #self.ax[5].set_visible(True)
@@ -698,7 +618,7 @@ class PortfolioManager:
             self.setAxesCommonConfig(5, 'm6', script_name, 'Stoch Oscillator')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
-            msgbx.showerror("Alpha Vantage error", e)
+            msgbx.showerror("Error", "Error in STOCH: " + e)
             self.POSrightclickmenuStochasticOscillator.set(self.reverseMenutick(self.POSrightclickmenuStochasticOscillator))
 
     def rightclickmenuMACD(self):
@@ -712,19 +632,15 @@ class PortfolioManager:
             self.clearandresetGraphs(6, 'm7')
             self.setFigureCommonConfig(script_name)
             return
-        if self.bool_test:
-            return
-            aapl_data = pd.read_csv("E:\\python_projects\\TestData\\daily_MSFT.csv")
-        else:
-            try:
-                data_macd, meta_macd = self.ti.get_macd(symbol=script_name)
+        try:
+            if self.bool_test:
+                testobj = PrepareTestData()
+                data_macd = testobj.loadMACD(script_name)
+            else:
+                data_macd, meta_macd = self.ti.get_macd(symbol=script_name, interval='daily',
+                    series_type='close', fastperiod=12, slowperiod=26, signalperiod=9)
                 #data_macd = data_macd.sort_index(axis=0)
 
-            except ValueError as error:
-                msgbx.showerror("Alpha Vantage error", e)
-                self.POSrightclickmenuMACD.set(self.reverseMenutick(self.POSrightclickmenuMACD))
-                return
-        try:
             # Visualization
             self.ax[6].clear()
             #self.ax[6].set_visible(True)
@@ -735,7 +651,7 @@ class PortfolioManager:
             self.setAxesCommonConfig(6, 'm7', script_name, 'Moving Avg conv')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
-            msgbx.showerror("Alpha Vantage error", e)
+            msgbx.showerror("Error", "Error in MACD: "+ e)
             self.POSrightclickmenuMACD.set(self.reverseMenutick(self.POSrightclickmenuMACD))
     
     def rightclickmenuAROON(self):
@@ -749,19 +665,14 @@ class PortfolioManager:
             self.clearandresetGraphs(7, 'm8')
             self.setFigureCommonConfig(script_name)
             return
-        if self.bool_test:
-            return
-            aapl_data = pd.read_csv("E:\\python_projects\\TestData\\daily_MSFT.csv")
-        else:
-            try:
+        try:
+            if self.bool_test:
+                testobj = PrepareTestData()
+                data_aroon = testobj.loadAROON(script_name)
+            else:
                 data_aroon, meta_aroon = self.ti.get_aroon(symbol=script_name)
                 #data_aroon = data_aroon.sort_index(axis=0)
 
-            except ValueError as error:
-                msgbx.showerror("Alpha Vantage error", e)
-                self.POSrightclickmenuMACD.set(self.reverseMenutick(self.POSrightclickmenuMACD))
-                return
-        try:
             # Visualization
             self.ax[7].clear()
             #self.ax[7].set_visible(True)
@@ -771,7 +682,7 @@ class PortfolioManager:
             self.setAxesCommonConfig(7, 'm8', script_name, 'Aroon')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
-            msgbx.showerror("Alpha Vantage error", e)
+            msgbx.showerror("Error", "Error in AROON: " + e)
             self.POSrightclickmenuAROON.set(self.reverseMenutick(self.POSrightclickmenuAROON))
     
     def rightclickmenuBBands(self):
@@ -785,19 +696,16 @@ class PortfolioManager:
             self.clearandresetGraphs(8, 'm9')
             self.setFigureCommonConfig(script_name)
             return
-        if self.bool_test:
-            return
-            aapl_data = pd.read_csv("E:\\python_projects\\TestData\\daily_MSFT.csv")
-        else:
-            try:
-                data_bbands, meta_bbands = self.ti.get_bbands(symbol=script_name)
+        
+        try:
+            if self.bool_test:
+                testobj = PrepareTestData()
+                data_bbands=testobj.loadBBands(script_name)
+            else:
+                data_bbands, meta_bbands = self.ti.get_bbands(symbol=script_name, interval='daily',
+                    time_period=20, series_type='close',nbdevup=2, nbdevdn=2, matype=0)
                 #data_bbands = data_bbands.sort_index(axis=0)
 
-            except ValueError as error:
-                msgbx.showerror("Alpha Vantage error", e)
-                self.POSrightclickmenuBBands.set(self.reverseMenutick(self.POSrightclickmenuBBands))
-                return
-        try:
             # Visualization
             self.ax[8].clear()
             #self.ax[8].set_visible(True)
@@ -808,7 +716,7 @@ class PortfolioManager:
             self.setAxesCommonConfig(8, 'm9', script_name, 'Bollinger Bands')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
-            msgbx.showerror("Alpha Vantage error", e)
+            msgbx.showerror("Error", "Error in BBANDS: " + e)
             self.POSrightclickmenuAROON.set(self.reverseMenutick(self.POSrightclickmenuAROON))
 
 
@@ -965,7 +873,11 @@ class PortfolioManager:
                     if(symbolname!=str(arg_list[0])):
                         try:
                             symbolname = str(arg_list[0])
-                            dfstockname, meta_data = self.ts.get_quote_endpoint(symbolname)
+                            if(self.bool_test):
+                                testobj = PrepareTestData()
+                                dfstockname = testobj.GetQuoteEndPoint(symbolname)
+                            else:
+                                dfstockname, meta_data = self.ts.get_quote_endpoint(symbolname)
                         except ValueError as error:
                             msgbx.showerror("Open file-Alpha Vantage Error", error)
                             return
