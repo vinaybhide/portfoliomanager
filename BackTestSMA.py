@@ -1,3 +1,4 @@
+#v0.6
 #v0.5
 #v0.4
 """ Class - cBackTestSMA
@@ -26,10 +27,12 @@ import matplotlib.dates as mdates
 from ScriptTree import ScriptTreeView
 from tkinter import messagebox as msgbx
 
+from testdata import *
+
 class BackTestSMA:
     def __init__(self, argkey=None, argscript=None, argscripttree=None, 
                 arglistholdingcols=None, argstartdt=None, argenddt=None, argavgsmall=None, 
-                argavglarge=None):
+                argavglarge=None, argIsTest=False):
         super().__init__()
         self.key = argkey
         self.script = argscript
@@ -37,8 +40,12 @@ class BackTestSMA:
         self.enddt = argenddt
         self.avgsmall = argavgsmall
         self.avglarge = argavglarge
-        self.ts = TimeSeries(self.key, output_format='pandas')
-        self.ti = TechIndicators(self.key, output_format='pandas')
+        self.bool_test = argIsTest
+
+        if(self.bool_test == False):
+            self.ts = TimeSeries(self.key, output_format='pandas')
+            self.ti = TechIndicators(self.key, output_format='pandas')
+
         self.treeofscripts = argscripttree
         self.dfholdingvalues = DataFrame()
 
@@ -309,7 +316,11 @@ class BackTestSMA:
             return
 
         try:
-            self.dfScript, meta_data = self.ts.get_daily(symbol=self.script, outputsize='full')
+            if(self.bool_test):
+                testobj = PrepareTestData()
+                self.dfScript = testobj.loadDaily(self.script)
+            else:
+                self.dfScript, meta_data = self.ts.get_daily(symbol=self.script, outputsize='full')
             self.dfScript.sort_index(axis=0, inplace=True)
         except ValueError as error:
             msgbx.showerror("Alpha Vantage error", error)
@@ -344,6 +355,7 @@ class BackTestSMA:
                 "8. split coefficient": "1.0000"
             }}
         """
+    
     def getDataNotUsed(self):
         self.dfScript, meta_data = self.ts.get_daily_adjusted(self.script)
         records = {

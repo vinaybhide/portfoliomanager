@@ -1,3 +1,4 @@
+#v0.6
 #v0.5
 #v0.4
 from tkinter import *
@@ -15,17 +16,17 @@ from datetime import date
 
 from BackTestSMA import *
 from addnewmodifyscript import classAddNewModifyScript
-
+from testdata import *
 
 class classGetQuote(Toplevel):
-    def __init__(self, master=None, argkey='XXXX', argscript="", argoutputtree=None):
+    def __init__(self, master=None, argkey='XXXX', argscript="", argoutputtree=None, argIsTest=False):
         Toplevel.__init__(self, master=master)
         self.wm_state(newstate='zoomed')
         #self.wm_resizable(width=False, height=False)
         self.key = argkey
         self.script = argscript
         self.output_tree = argoutputtree
-
+        self.bool_test = argIsTest
         #graph filter params
         self.pastdate = str(date.today())
         self.graphctr=1
@@ -274,9 +275,15 @@ class classGetQuote(Toplevel):
         argYears - indicates no of years from todays date 
     """
     def dateFilter(self, argYears):
-        strtoday = date.today()
+        try:
+            dt = date.today()
+            dt = dt.replace(year=dt.year-argYears)
+        except ValueError:
+            dt = dt.replace(year=dt.year-argYears, day=dt.day-1)
+        self.pastdate = str(dt)
+        """strtoday = date.today()
         self.pastdate = date(strtoday.year-argYears, strtoday.month, strtoday.day)
-        self.pastdate = str(self.pastdate)
+        self.pastdate = str(self.pastdate)"""
 
     def drawPastData(self):
         try:
@@ -295,7 +302,11 @@ class classGetQuote(Toplevel):
             self.f.clear()
             #daily
             if(self.bdaily.get() == True):
-                dfdata, dfmetadata = ts.get_daily(symbol=self.script)
+                if(self.bool_test):
+                    testobj = PrepareTestData()
+                    dfdata = testobj.loadDaily(self.script)
+                else:
+                    dfdata, dfmetadata = ts.get_daily(symbol=self.script)
                 #self.changeColNameTypeofDailyTS()
                 #self.f.add_subplot(3, 3, graphctr, label='Daily closing price', 
                 #    xlabel='Date', ylabel='Closing price').plot(self.dfdailyts['Close'], label='Daily closing price')
@@ -310,7 +321,11 @@ class classGetQuote(Toplevel):
 
             #intraday
             if(self.bintra.get() == True):
-                dfdata, dfmetadata = ts.get_intraday(symbol=self.script)
+                if(self.bool_test):
+                    testobj = PrepareTestData()
+                    dfdata = testobj.loadIntra(self.script)
+                else:
+                    dfdata, dfmetadata = ts.get_intraday(symbol=self.script)
                 dfdata = dfdata.sort_index(axis=0)
                 dfdata=dfdata[dfdata.index[:] >= self.pastdate]
                 ax2=self.f.add_subplot(3,3,self.graphctr, title='Intra-day close', ylabel='Intraday close')
@@ -321,7 +336,11 @@ class classGetQuote(Toplevel):
                 self.graphctr += 1
             #sma
             if(self.bsma.get() == True):
-                dfdata, dfmetadata = ti.get_sma(symbol=self.script)
+                if(self.bool_test):
+                    testobj = PrepareTestData()
+                    dfdata = testobj.loadSMA(self.script)
+                else:
+                    dfdata, dfmetadata = ti.get_sma(symbol=self.script)
                 dfdata = dfdata.sort_index(axis=0)
                 dfdata=dfdata[dfdata.index[:] >= self.pastdate]
 
@@ -334,7 +353,11 @@ class classGetQuote(Toplevel):
 
             #ema
             if(self.bema.get() == True):
-                dfdata, dfmetadata = ti.get_ema(symbol=self.script)
+                if(self.bool_test):
+                    testobj = PrepareTestData()
+                    dfdata = testobj.loadEMA(self.script)
+                else:
+                    dfdata, dfmetadata = ti.get_ema(symbol=self.script)
                 dfdata = dfdata.sort_index(axis=0)
                 dfdata=dfdata[dfdata.index[:] >= self.pastdate]
                 ax4 = self.f.add_subplot(3,3,self.graphctr, title='Exponential moving avg', ylabel='EMA')
@@ -346,7 +369,11 @@ class classGetQuote(Toplevel):
 
             #vwap returns one col = VWAP
             if(self.bvwap.get() == True):
-                dfdata, dfmetadata = ti.get_vwap(symbol=self.script)
+                if(self.bool_test):
+                    testobj = PrepareTestData()
+                    dfdata = testobj.loadVWMP(self.script)
+                else:
+                    dfdata, dfmetadata = ti.get_vwap(symbol=self.script)
                 dfdata = dfdata.sort_index(axis=0)
                 dfdata=dfdata[dfdata.index[:] >= self.pastdate]
                 ax5 = self.f.add_subplot(3,3,self.graphctr, title='Volume weighted avg price', ylabel='VWAP')
@@ -358,7 +385,11 @@ class classGetQuote(Toplevel):
 
             #macd returns 3 cols. For ex, "MACD_Signal": "-4.7394", "MACD": "-7.7800", "MACD_Hist": "-3.0406"
             if(self.bmacd.get() == True):
-                dfdata, dfmetadata = ti.get_macd(symbol=self.script)
+                if(self.bool_test):
+                    testobj = PrepareTestData()
+                    dfdata = testobj.loadMACD(self.script)
+                else:
+                    dfdata, dfmetadata = ti.get_macd(symbol=self.script)
                 dfdata = dfdata.sort_index(axis=0)
                 dfdata=dfdata[dfdata.index[:] >= self.pastdate]
                 ax6 = self.f.add_subplot(3,3,self.graphctr, title='Moving avg convergence/divergence', ylabel='MACD')
@@ -372,7 +403,11 @@ class classGetQuote(Toplevel):
 
             #rsi returns one col RSI
             if(self.brsi.get() == True):
-                dfdata, dfmetadata = ti.get_rsi(symbol=self.script)
+                if(self.bool_test):
+                    testobj = PrepareTestData()
+                    dfdata = testobj.loadRSI(self.script)
+                else:
+                    dfdata, dfmetadata = ti.get_rsi(symbol=self.script)
                 dfdata = dfdata.sort_index(axis=0)
                 dfdata=dfdata[dfdata.index[:] >= self.pastdate]
                 ax7 = self.f.add_subplot(3,3,self.graphctr, title='Relative strength index', ylabel='RSI')
@@ -384,7 +419,11 @@ class classGetQuote(Toplevel):
 
             #adx returns one col ADX
             if(self.badx.get() == True):
-                dfdata, dfmetadata = ti.get_adx(symbol=self.script)
+                if(self.bool_test):
+                    testobj = PrepareTestData()
+                    dfdata = testobj.loadADX(self.script)
+                else:
+                    dfdata, dfmetadata = ti.get_adx(symbol=self.script)
                 dfdata = dfdata.sort_index(axis=0)
                 dfdata=dfdata[dfdata.index[:] >= self.pastdate]
                 ax8 = self.f.add_subplot(3,3,self.graphctr, title='Average directional moving index', ylabel='ADX')
@@ -396,7 +435,11 @@ class classGetQuote(Toplevel):
 
             #aroon returns two cols for ex "Aroon Up": "28.5714", "Aroon Down": "100.0000"
             if(self.baroon.get() == True):
-                dfdata, dfmetadata = ti.get_aroon(symbol=self.script)
+                if(self.bool_test):
+                    testobj = PrepareTestData()
+                    dfdata = testobj.loadAROON(self.script)
+                else:
+                    dfdata, dfmetadata = ti.get_aroon(symbol=self.script)
                 dfdata = dfdata.sort_index(axis=0)
                 dfdata=dfdata[dfdata.index[:] >= self.pastdate]
                 ax9 = self.f.add_subplot(3,3,self.graphctr, title='AROON', ylabel='AROON')

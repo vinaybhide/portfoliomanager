@@ -1,3 +1,4 @@
+#v0.6
 #v0.5
 #v0.4
 from tkinter import *
@@ -15,6 +16,7 @@ from matplotlib import interactive
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import warnings
 from datetime import date
+from testdata import *
 
 class ScriptTreeView(ttk.Treeview):
     def __init__(self, master=None, argTS = None, argTI = None, argFigure = None, argTestMode = None, argCanvas = None, argToolbar = None, **kw):
@@ -301,17 +303,18 @@ class ScriptTreeView(ttk.Treeview):
             msgbx.showerror("Error", "Insufficient arguments passed in *args")
             return
         
-        if (self.btestmode==True):
-            dfstockname = pd.read_csv("E:\\python_projects\\TestData\\global_quote.csv")
-        else:
-            try:
-                if(argPriceDf.empty == True):
-                    dfstockname, meta_data = self.ts.get_quote_endpoint(argStockName)
+        try:
+            if(argPriceDf.empty == True):
+                if (self.btestmode==True):
+                    testobj = PrepareTestData()
+                    dfstockname = testobj.GetQuoteEndPoint(argStockName)
                 else:
-                    dfstockname = argPriceDf
-            except ValueError as error:
-                msgbx.showerror("Alpha Vantage Error", error)
-                return
+                    dfstockname, meta_data = self.ts.get_quote_endpoint(argStockName)
+            else:
+                dfstockname = argPriceDf
+        except ValueError as error:
+            msgbx.showerror("Alpha Vantage Error", error)
+            return
         currclosingprice = float(dfstockname.values[0][4])
         status = ''
         currentvalue=0.00
