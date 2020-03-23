@@ -1,4 +1,13 @@
 # portfoliomanager
+Pre-requisites for development:
+1. I developed this on WinXP using Python 3.8.2 32-bit on Win 7
+2. Make sure you have PIP (latest version I have used is 3)
+3. install following:
+    pip install alpha_vantage
+    pip install pandas
+    pip install matplotlib
+4. In addition I have used tkinter module for graphics
+
 Program using alpha vantage to manage stock portfolio
 v0.4 - Features as below
    1. File->Save current scripts in tree as portfolio  to a file
@@ -35,3 +44,12 @@ v0.5 - Bug fixes and features
          Added 20 day SMA graph in the same plot
    6. Added graphs on right click on selected script. Handling of movement is also taken care.
 v0.6 - Added test data support via downloaded file for all except get_quote_endpoint and search_endpoint
+   1. How to use Test data option (ideal for offline demos without Get Quote and Add/Modify functionality)?
+      1.1 From Help->Test Mode (On/Off) you can toggle the test mode
+      1.2 All the historical data including price & indicator and end point quote is cached in csv files in folder 'ScriptData'
+      1.3 The free key of Alpha vantage has limitation of 5 calls per 5 minute/ total 500 calls per day
+      1.4 Suggested approach is extract all data once daily.
+      1.5 Note the script search in the Get Quote and add script dialog is still ONLINE
+      1.6 You can select existing portfolio file to open. You have to make sure that you have the specific script end point quote file
+      1.7 Once the portfolio is open all functionality should work fine
+      
