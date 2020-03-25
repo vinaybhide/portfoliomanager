@@ -258,6 +258,6 @@ class PrepareTestData:
 
 if __name__ == "__main__":
     obj = PrepareTestData()
-    obj.GetQuoteEndPoint('HDFC.BSE')
+    obj.loadDaily('HDFC.BSE')
     input()
 
