@@ -24,7 +24,7 @@ from datetime import date
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 import matplotlib.dates as mdates
-from ScriptTree import ScriptTreeView
+from scripttree import ScriptTreeView
 from tkinter import messagebox as msgbx
 
 from testdata import *
