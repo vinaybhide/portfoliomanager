@@ -1,4 +1,3 @@
-#v0.7 - Base version with all graphs and bug fixes
 #v0.6
 #v0.5
 #v0.4
@@ -25,7 +24,7 @@ from datetime import date
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 import matplotlib.dates as mdates
-from scripttree import ScriptTreeView
+from ScriptTree import ScriptTreeView
 from tkinter import messagebox as msgbx
 
 from testdata import *
