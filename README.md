@@ -52,4 +52,4 @@ v0.6 - Added test data support via downloaded file for all except get_quote_endp
       1.5 Note the script search in the Get Quote and add script dialog is still ONLINE
       1.6 You can select existing portfolio file to open. You have to make sure that you have the specific script end point quote file
       1.7 Once the portfolio is open all functionality should work fine
-      
+ v0.7 - Base version with all graphs and bug fixes
