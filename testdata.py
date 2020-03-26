@@ -1,3 +1,4 @@
+#v0.7 - Base version with all graphs and bug fixes
 #v0.6
 import pandas as pd
 from pandas import DataFrame
@@ -256,8 +257,8 @@ class PrepareTestData:
 
         input()
 
-if __name__ == "__main__":
+"""if __name__ == "__main__":
     obj = PrepareTestData()
-    obj.GetQuoteEndPoint('HDFC.BSE')
+    obj.loadDaily('HDFC.BSE')
     input()
-
+"""
