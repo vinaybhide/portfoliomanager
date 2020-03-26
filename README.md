@@ -1,6 +1,6 @@
 # portfoliomanager
 Pre-requisites for development:
-1. I developed this on WinXP using Python 3.8.2 32-bit on Win 7
+1. I developed this on Win7 using Python 3.8.2 32-bit on Win 7
 2. Make sure you have PIP (latest version I have used is 3)
 3. install following:
     pip install alpha_vantage
