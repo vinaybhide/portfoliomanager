@@ -1,3 +1,4 @@
+#v0.7 - Base version with all graphs and bug fixes
 #v0.6
 #v0.5
 #v0.4 - Features as below
@@ -46,9 +47,9 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 import warnings
 from datetime import date
 
-from ScriptTree import *
+from scripttree import *
 from addnewmodifyscript import *
-from BackTestSMA import *
+from backtestsma import *
 from getquote import *
 from testdata import *
 
@@ -153,13 +154,13 @@ class PortfolioManager:
         self.popup_menu_righclick.add_checkbutton(label="Volume WMA", onvalue=True, offvalue=False, variable=self.POSrightclickmenuVWMP, command=self.rightclickmenuVWMP)
         #self.POSrightclickmenuVWMP=7
 
-        self.POSrightclickmenuRSIVsIntra= BooleanVar(False)
-        self.popup_menu_righclick.add_checkbutton(label="RSI Vs Intra-day", onvalue=True, offvalue=False, variable=self.POSrightclickmenuRSIVsIntra, command=self.rightclickmenuRSIVsIntra)
-        #self.POSrightclickmenuRSIVsIntra=8
+        self.POSrightclickmenuRSI= BooleanVar(False)
+        self.popup_menu_righclick.add_checkbutton(label="RSI", onvalue=True, offvalue=False, variable=self.POSrightclickmenuRSI, command=self.rightclickmenuRSI)
+        #self.POSrightclickmenuRSI=8
 
-        self.POSrightclickmenuRSIVsSMA= BooleanVar(False)
-        self.popup_menu_righclick.add_checkbutton(label="RSI Vs SMA", onvalue=True, offvalue=False, variable=self.POSrightclickmenuRSIVsSMA, command=self.rightclickmenuRSIVsSMA)
-        #self.POSrightclickmenuRSIVsSMA=9
+        self.POSrightclickmenuADX= BooleanVar(False)
+        self.popup_menu_righclick.add_checkbutton(label="ADX", onvalue=True, offvalue=False, variable=self.POSrightclickmenuADX, command=self.rightclickmenuADX)
+        #self.POSrightclickmenuADX=9
         
         self.POSrightclickmenuStochasticOscillator= BooleanVar(False)
         self.popup_menu_righclick.add_checkbutton(label="Stochastic Oscillator", onvalue=True, offvalue=False, variable=self.POSrightclickmenuStochasticOscillator, command=self.rightclickmenuStochasticOscillator)
@@ -206,7 +207,11 @@ class PortfolioManager:
     def resetExisting(self):
         #global output_counter
         # delete existing tree items
+        self.currentScript = ''
         self.output_tree.delete(*self.output_tree.get_children())
+        bShouldRestMenu = self.TreeViewSelectionChanged()
+        if( bShouldRestMenu):
+            self.resetMenuticktoFalse()
         self.f.clf()
         if(self.output_tree.output_counter > 0):
             self.output_tree.output_counter = 1
@@ -328,11 +333,37 @@ class PortfolioManager:
         return True
 
     # This method is called from right click event
-    def TreeViewSelectionChanged(self, event):
-        tempParent = self.output_tree.get_parent_item()
-        if(len(self.currentScript) == 0):
-            self.currentScript = tempParent
-        elif (tempParent != self.currentScript): #check if any graphs are shown in figure & clear them if there are
+    def TreeViewSelectionChanged(self):
+        
+        tree_depth = self.output_tree.get_children() 
+        if(len(tree_depth) > 0): #make sure call was not from resetExisting
+            tempParent = self.output_tree.get_parent_item()
+            if(len(self.currentScript) == 0):
+                self.currentScript = tempParent
+            elif (tempParent != self.currentScript): #check if any graphs are shown in figure & clear them if there are
+                for i in range(len(self.ax)):
+                    self.ax[i].clear()
+                    self.ax[i].set_visible(False)
+                self.dfDaily = DataFrame()
+                self.dfSMA = DataFrame()
+                self.dfIntra = DataFrame()
+                self.dfVWMP = DataFrame()
+                self.dfRSI = DataFrame()
+                self.dfStoch = DataFrame()
+                self.dfMACD = DataFrame()
+                self.dfAROON = DataFrame()
+                self.dfBBANDS = DataFrame()
+                self.dfADX = DataFrame()
+
+                self.mouseClickMoveEnableDisable(False)
+                self.graphctr = 1
+                self.currentScript = tempParent
+                self.f.clear()
+                self.setFigureCommonConfig(self.currentScript)
+                #self.f.suptitle("", size='small')
+                return True
+        else:
+            self.currentScript = ''
             for i in range(len(self.ax)):
                 self.ax[i].clear()
                 self.ax[i].set_visible(False)
@@ -349,10 +380,8 @@ class PortfolioManager:
 
             self.mouseClickMoveEnableDisable(False)
             self.graphctr = 1
-            self.currentScript = tempParent
             self.f.clear()
             self.setFigureCommonConfig(self.currentScript)
-            #self.f.suptitle("", size='small')
             return True
         return False
 
@@ -422,17 +451,17 @@ class PortfolioManager:
         if(argCurrentMenuState.get() == True):
             return False
         return True
+    
     #When user selects a new script from Tree View, this method will set the right click 
     # menu handlers to False, called from right click even handlers
-    def resetMenuticktoFalse(self, argCurrentMenuState):
+    def resetMenuticktoFalse(self):
         self.POSrightclickmenuDailyVsSMA.set(False)
         self.POSrightclickmenuAROON.set(False)
         self.POSrightclickmenuBBands.set(False)
-        self.POSrightclickmenuDailyVsSMA.set(False)
         self.POSrightclickmenuIntraDay.set(False)
         self.POSrightclickmenuMACD.set(False)
-        self.POSrightclickmenuRSIVsIntra.set(False)
-        self.POSrightclickmenuRSIVsSMA.set(False)
+        self.POSrightclickmenuRSI.set(False)
+        self.POSrightclickmenuADX.set(False)
         self.POSrightclickmenuStochasticOscillator.set(False)
         self.POSrightclickmenuVWMP.set(False)
 
@@ -440,6 +469,7 @@ class PortfolioManager:
     # Called from setAxesCommonConfig when graphctr = 1 to bind the events
     # Called from clearandresetGraphs when graphctr = 1 to unbind
     def mouseClickMoveEnableDisable(self, argbFlag):
+        return True
         if(argbFlag == True):
             #self.cid_leftclick = self.output_canvas.callbacks.connect('button_press_event', self.on_click_graphs)
             self.cid_mouse_move = self.output_canvas.callbacks.connect('motion_notify_event', self.on_mouse_move)
@@ -500,14 +530,14 @@ class PortfolioManager:
                     listpurchasprice.append([child_val[0], child_val[1]])"""
 
             sizeofdaily = self.dfDaily.index.size
-            self.dfSMA = self.dfSMA.head(sizeofdaily)
+            #self.dfSMA = self.dfSMA.head(sizeofdaily)
             # Visualization
             self.ax[0].clear()
             #self.ax[0].set_visible(True)
             self.ax[0] = self.f.add_subplot(self.dictgraphmenu[0]['m1'][0], self.dictgraphmenu[0]['m1'][1], self.graphctr, visible=True)#, title=script_name, label='Daily close price', xlabel='Date', ylabel='Closing price')
             self.ax[0].plot(self.dfDaily['4. close'], label='Close')
             self.ax[0].plot(self.dfDaily['4. close'], 'x', markersize=5)
-            self.ax[0].plot(self.dfSMA['SMA'], label='20 SMA')
+            self.ax[0].plot(self.dfSMA.head(sizeofdaily)['SMA'], label='20 SMA')
 
             #commenting annotations
             """for eachrow in listpurchasprice:
@@ -547,7 +577,7 @@ class PortfolioManager:
                 if(self.dfIntra.empty):
                     self.dfIntra, aapl_meta_data = self.ts.get_intraday(symbol=script_name, interval='5min')
 
-            self.dfIntra=self.dfIntra.sort_index(axis=0)
+            self.dfIntra=self.dfIntra.sort_index(axis=0, ascending=False)
 
             # Visualization
             self.ax[1].clear()
@@ -578,7 +608,7 @@ class PortfolioManager:
             else:
                 self.dfVWMP, meta_vwap = self.ti.get_vwap(symbol=script_name)
             
-            self.dfVWMP=self.dfVWMP.sort_index(axis=0)
+            self.dfVWMP=self.dfVWMP.sort_index(axis=0, ascending=False)
             # Visualization
             self.ax[2].clear()
             #self.ax[2].set_visible(True)
@@ -590,54 +620,51 @@ class PortfolioManager:
             msgbx.showerror("Error", "Error in VWAP: " + str(e))
             self.POSrightclickmenuVWMP.set(self.reverseMenutick(self.POSrightclickmenuVWMP))
 
-    def rightclickmenuRSIVsIntra(self):
+    def rightclickmenuRSI(self):
         script_name = self.output_tree.get_parent_item()
         if(len(script_name) <=0):
             msgbx.showwarning("Warning", "Please select valid row")
-            self.POSrightclickmenuRSIVsIntra.set(self.reverseMenutick(self.POSrightclickmenuRSIVsIntra))
+            self.POSrightclickmenuRSI.set(self.reverseMenutick(self.POSrightclickmenuRSI))
             return
 
-        if(self.POSrightclickmenuRSIVsIntra.get() == False):
+        if(self.POSrightclickmenuRSI.get() == False):
             self.clearandresetGraphs(3, 'm4')
             self.setFigureCommonConfig(script_name)
             return
         try:
             if self.bool_test:
                 testobj = PrepareTestData()
-                if(self.dfIntra.empty):
-                    self.dfIntra = testobj.loadIntra(script_name)
-                if(self.dfRSI.empty):
-                    self.dfRSI = testobj.loadRSI(script_name)
+                self.dfRSI = testobj.loadRSI(script_name)
             else:
-                if(self.dfIntra.empty):
-                    self.dfIntra, meta_intra = self.ts.get_intraday(symbol=script_name, interval='5min')
-                if(self.dfRSI.empty):
-                    self.dfRSI, meta_rsi = self.ti.get_rsi(symbol=script_name)
+                self.dfRSI, meta_rsi = self.ti.get_rsi(symbol=script_name)
             
-            self.dfIntra = self.dfIntra.sort_index(axis=0)
-            self.dfRSI = self.dfRSI.sort_index(axis=0)
-            sizeofintra = self.dfIntra.size
-            self.dfRSI = self.dfRSI.head(sizeofintra)
+            self.dfRSI = self.dfRSI.sort_index(axis=0, ascending=False)
+            #self.dfRSI = self.dfRSI.head(sizeofintra)
             # Visualization
             self.ax[3].clear()
             #self.ax[3].set_visible(True)
+            #color = 'tab:red'
             self.ax[3] = self.f.add_subplot(self.dictgraphmenu[3]['m4'][0], self.dictgraphmenu[3]['m4'][1], self.graphctr, visible=True)#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
-            self.ax[3].plot(self.dfIntra['4. close'], label='Intra-day')
+            #self.ax[3].tick_params(axis='y', labelcolor=color)
+            #twinax = self.ax[3].twinx()
+            #color = 'tab:blue'
             self.ax[3].plot(self.dfRSI['RSI'], label='RSI')
-            self.setAxesCommonConfig(3, 'm4', script_name, 'RSI Vs Intra-day')
+            #twinax.tick_params(axis='y', labelcolor=color)
+
+            self.setAxesCommonConfig(3, 'm4', script_name, 'RSI')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
-            msgbx.showerror("Error", "Error in Intra Vs RSI: " + str(e))
+            msgbx.showerror("Error", "Error in RSI: " + str(e))
             self.POSrightclickmenuVWMP.set(self.reverseMenutick(self.POSrightclickmenuVWMP))
 
-    def rightclickmenuRSIVsSMA(self):
+    def rightclickmenuADX(self):
         script_name = self.output_tree.get_parent_item()
         if(len(script_name) <=0):
             msgbx.showwarning("Warning", "Please select valid row")
-            self.POSrightclickmenuRSIVsSMA.set(self.reverseMenutick(self.POSrightclickmenuRSIVsSMA))
+            self.POSrightclickmenuADX.set(self.reverseMenutick(self.POSrightclickmenuADX))
             return
 
-        if(self.POSrightclickmenuRSIVsSMA.get() == False):
+        if(self.POSrightclickmenuADX.get() == False):
             self.clearandresetGraphs(4, 'm5')
             self.setFigureCommonConfig(script_name)
             return
@@ -645,30 +672,22 @@ class PortfolioManager:
         try:
             if self.bool_test:
                 testobj = PrepareTestData()
-                if(self.dfSMA.empty):
-                    self.dfSMA = testobj.loadSMA(script_name)
-                if(self.dfRSI.empty):
-                    self.dfRSI = testobj.loadRSI(script_name)
+                self.dfADX = testobj.loadADX(script_name)
             else:
-                if(self.dfSMA.empty):
-                    self.dfSMA, meta_sma = self.ti.get_sma(symbol=script_name)
-                if(self.dfRSI.empty):
-                    self.dfRSI, meta_rsi = self.ti.get_rsi(symbol=script_name)
+                self.dfADX, meta_adx = self.ti.get_adx(symbol=script_name)
                 
-            self.dfSMA = self.dfSMA.sort_index(axis=0)
-            self.dfRSI = self.dfRSI.sort_index(axis=0)
+            self.dfADX = self.dfADX.sort_index(axis=0, ascending=False)
 
             # Visualization
             self.ax[4].clear()
             #self.ax[4].set_visible(True)
             self.ax[4] = self.f.add_subplot(self.dictgraphmenu[4]['m5'][0], self.dictgraphmenu[4]['m5'][1], self.graphctr, visible=True)#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
-            self.ax[4].plot(self.dfSMA['SMA'], label='SMA')
-            self.ax[4].plot(self.dfRSI['RSI'], label='RSI')
-            self.setAxesCommonConfig(4, 'm5', script_name, 'RSI Vs SMA')
+            self.ax[4].plot(self.dfADX['ADX'], label='ADX')
+            self.setAxesCommonConfig(4, 'm5', script_name, 'ADX')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
-            msgbx.showerror("Error", "Error in SMA Vs RSI: " + str(e))
-            self.POSrightclickmenuRSIVsSMA.set(self.reverseMenutick(self.POSrightclickmenuRSIVsSMA))
+            msgbx.showerror("Error", "Error in ADX: " + str(e))
+            self.POSrightclickmenuADX.set(self.reverseMenutick(self.POSrightclickmenuADX))
 
     def rightclickmenuStochasticOscillator(self):
         script_name = self.output_tree.get_parent_item()
@@ -688,9 +707,9 @@ class PortfolioManager:
             else:
                 self.dfStoch, meta_stoch = self.ti.get_stoch(symbol=script_name, interval='daily',
                     fastkperiod=5, slowkperiod=3, slowdperiod=3, slowkmatype=0, slowdmatype=0)
-                #data_stoch = data_stoch.sort_index(axis=0)
+                #data_stoch = data_stoch.sort_index(axis=0, ascending=False)
 
-            self.dfStoch = self.dfStoch.sort_index(axis=0)
+            self.dfStoch = self.dfStoch.sort_index(axis=0, ascending=False)
             # Visualization
             self.ax[5].clear()
             #self.ax[5].set_visible(True)
@@ -721,9 +740,8 @@ class PortfolioManager:
             else:
                 self.dfMACD, meta_macd = self.ti.get_macd(symbol=script_name, interval='daily',
                     series_type='close', fastperiod=12, slowperiod=26, signalperiod=9)
-                #data_macd = data_macd.sort_index(axis=0)
 
-            self.dfMACD = self.dfMACD.sort_index(axis=0)
+            self.dfMACD = self.dfMACD.sort_index(axis=0, ascending=False)
             # Visualization
             self.ax[6].clear()
             #self.ax[6].set_visible(True)
@@ -755,7 +773,7 @@ class PortfolioManager:
             else:
                 self.dfAROON, meta_aroon = self.ti.get_aroon(symbol=script_name)
             
-            self.dfAROON = self.dfAROON.sort_index(axis=0)
+            self.dfAROON = self.dfAROON.sort_index(axis=0, ascending=False)
 
             # Visualization
             self.ax[7].clear()
@@ -789,7 +807,7 @@ class PortfolioManager:
                 self.dfBBANDS, meta_bbands = self.ti.get_bbands(symbol=script_name, interval='daily',
                     time_period=20, series_type='close',nbdevup=2, nbdevdn=2, matype=0)
             
-            self.dfBBANDS = self.dfBBANDS.sort_index(axis=0)
+            self.dfBBANDS = self.dfBBANDS.sort_index(axis=0, ascending=False)
 
             # Visualization
             self.ax[8].clear()
@@ -944,33 +962,36 @@ class PortfolioManager:
     """Method - menuOpenPortfolio
         Opens a valid portfolio file"""
     def menuOpenPortfolio(self):
-        openfilehandle=askopenfile('r', initialdir = "/", title = "Open portfolio file to load portfolio",filetypes = (("csv files","*.csv"),("all files","*.*")) )
-        if openfilehandle is not None:
-            list_scripts=openfilehandle.readlines()
-            openfilehandle.close()
-            self.resetExisting()
-            symbolname = ''
-            dfstockname = None
-            for script in list_scripts:
-                # -1 to remove the last '\n' and then split the string by ','
-                arg_list=str(script[:-1]).split(',')
-                if(len(arg_list) == 6):
-                    if(symbolname!=str(arg_list[0])):
-                        try:
-                            symbolname = str(arg_list[0])
-                            if(self.bool_test):
-                                testobj = PrepareTestData()
-                                dfstockname = testobj.GetQuoteEndPoint(symbolname)
-                            else:
-                                dfstockname, meta_data = self.ts.get_quote_endpoint(symbolname)
-                        except ValueError as error:
-                            msgbx.showerror("Open file-Alpha Vantage Error", error)
-                            return
-                    self.output_tree.get_stock_quote("", str(arg_list[0]), dfstockname, str(arg_list[1]), str(arg_list[2]),
-                    str(arg_list[3]), str(arg_list[4]), str(arg_list[5]))    
-                else:
-                    msgbx.showerror("Open portfolio", "Error->Input file not in correct format." +"\n" + "Each line must be in the format of ScriptName,PurchasePrice,PurchaseDate")
-                    return
+        try:
+            openfilehandle=askopenfile('r', initialdir = "/", title = "Open portfolio file to load portfolio",filetypes = (("csv files","*.csv"),("all files","*.*")) )
+            if openfilehandle is not None:
+                list_scripts=openfilehandle.readlines()
+                openfilehandle.close()
+                self.resetExisting()
+                symbolname = ''
+                dfstockname = None
+                for script in list_scripts:
+                    # -1 to remove the last '\n' and then split the string by ','
+                    arg_list=str(script[:-1]).split(',')
+                    if(len(arg_list) == 6):
+                        if(symbolname!=str(arg_list[0])):
+                            try:
+                                symbolname = str(arg_list[0])
+                                if(self.bool_test):
+                                    testobj = PrepareTestData()
+                                    dfstockname = testobj.GetQuoteEndPoint(symbolname)
+                                else:
+                                    dfstockname, meta_data = self.ts.get_quote_endpoint(symbolname)
+                            except ValueError as error:
+                                msgbx.showerror("Open file-Alpha Vantage Error", error)
+                                return
+                        self.output_tree.get_stock_quote("", str(arg_list[0]), dfstockname, str(arg_list[1]), str(arg_list[2]),
+                        str(arg_list[3]), str(arg_list[4]), str(arg_list[5]))    
+                    else:
+                        msgbx.showerror("Open portfolio", "Error->Input file not in correct format." +"\n" + "Each line must be in the format of ScriptName,PurchasePrice,PurchaseDate")
+                        return
+        except Exception as e:
+            msgbx.showerror('Error', 'Error while opening file: ' + str(e))
 
     """ method menuSavePortfolio       
         # the tree is in following format for each script
@@ -1098,18 +1119,9 @@ class PortfolioManager:
                 (self.output_tree.is_parent_item_selected() == False)):
                 try:
                     self.popup_menu_righclick.grab_release()
-                    bShouldRestMenu = self.TreeViewSelectionChanged(event)
+                    bShouldRestMenu = self.TreeViewSelectionChanged()
                     if( bShouldRestMenu):
-                        self.POSrightclickmenuDailyVsSMA.set(False)
-                        self.POSrightclickmenuAROON.set(False)
-                        self.POSrightclickmenuBBands.set(False)
-                        self.POSrightclickmenuDailyVsSMA.set(False)
-                        self.POSrightclickmenuIntraDay.set(False)
-                        self.POSrightclickmenuMACD.set(False)
-                        self.POSrightclickmenuRSIVsIntra.set(False)
-                        self.POSrightclickmenuRSIVsSMA.set(False)
-                        self.POSrightclickmenuStochasticOscillator.set(False)
-                        self.POSrightclickmenuVWMP.set(False)
+                        self.resetMenuticktoFalse()
                     self.popup_menu_righclick.grab_set()
                     self.popup_menu_righclick.tk_popup(event.x_root, event.y_root, 0)
 
