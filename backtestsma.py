@@ -139,9 +139,11 @@ class BackTestSMA:
 
         # we will only use data from the date of first purchase
         #self.dfScript = self.dfScript.loc[(self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][0])]
-        self.dfScript = self.dfScript.loc[(self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][imax-1])]
+        
+        #self.dfScript = self.dfScript.loc[(self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][imax-1])]
 
-        for i in range(imax-1, imax):
+        #for i in range(imax-1, imax):
+        for i in range(imax):
             if(i < imax-1): #we have still not last row
                 self.dfScript.loc[((self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][i]) & 
                                 (self.dfScript.index[:] < self.dfholdingvalues['PurchaseDate'][i+1])), 'PurchaseDate']=self.dfholdingvalues['PurchaseDate'][i]
@@ -237,73 +239,133 @@ class BackTestSMA:
         # it=((it−1)+(it−1)*rt)=(1+rt)*(it−1),i0=1
 
         self.dfScript['CumReturns']=(1+self.dfScript.Returns).cumprod()
-        print(self.dfScript)
     
+    
+    def setAxesCommonConfig(self, argAxes, argTitle):
+        argAxes.tick_params(direction='out', length=6, width=2, colors='r',
+            grid_color='r', grid_alpha=0.5, labelsize='small')
+        argAxes.tick_params(axis='x', labelrotation=30)
+
+        argAxes.grid(True)
+        argAxes.set_title(argTitle, size='small')
+        argAxes.legend(fontsize='small')
+
+    # argLookbackYears - is the no of years we want to go back from today
+    # if today is 2020-03-23 & argLookbackYears = 1, return will be 2019-03-23
+    # the expetion takes care of leap year
+    def getPastDateFromToday(self, argLookbackYears):
+        try:
+            dt = date.today()
+            dt = dt.replace(year=dt.year-argLookbackYears)
+        except ValueError:
+            dt = dt.replace(year=dt.year-argLookbackYears, day=dt.day-1)
+        return str(dt)
+
     """ plotPerformanceGraphTS
         d
     """
     def plotPerformanceGraphTS(self):
         f_temp=Figure(figsize=(60, 60), dpi=80, facecolor='w', edgecolor='k')
+        
+        f_temp.suptitle(self.script) #size='xx-small', y=.996, weight='semibold')
 
         #first 3 & 1 means we want to show 3 graphs in 1 column
         #last 1 indicates the sequence number of the current graph
-        ax1 = plt.subplot(221) 
+        ax1 = plt.subplot(221)
+        ax1.set_label('Portfolio Performance') 
         
         #first plot the self portfolio performance using CurrentVal columns in dfScript
-        plt.plot(self.dfScript['CurrentVal'], label='Portfolio price')
+        ax1.plot(self.dfScript.loc[self.dfScript.index[:] >= 
+            self.dfholdingvalues['PurchaseDate'][self.dfholdingvalues.shape[0]-1], 'CurrentVal'], label='Portfolio price')
+        #ax1.plot(self.dfScript['CurrentVal'], label='Portfolio price')
+        
         # now we will put markers where the user has bought the scripts and show cumulative qty
         #buys=self.dfScript.loc[(self.dfScript['Status'] != ''), ['PurchaseDate', 'PurchaseQTY', 'Status']]
-        buys=self.dfScript.loc[(self.dfScript['Status'] != ''), :]
-        plt.plot(buys.index, self.dfScript['CurrentVal'].loc[buys.index], marker="*", markersize=10, color='b', label='Buy transaction', linestyle='None')
+        #buys=self.dfScript.loc[(self.dfScript['Status'] != ''), :]
+        buys= self.dfScript.loc[self.dfScript.index[:] >= 
+            self.dfholdingvalues['PurchaseDate'][self.dfholdingvalues.shape[0]-1]]
+        buys = buys[buys['Status'] != '']
+
+        ax1.plot(buys.index, self.dfScript['CurrentVal'].loc[buys.index], marker="*", markersize=5, color='b', label='Buy transaction', linestyle='None')
         for i in range(len(buys.index)):
-            plt.annotate('Total Qty='+ str(buys['PurchaseQTY'][i]) + " "+buys['Status'][i], (mdates.datestr2num(buys['PurchaseDate'][i]), buys['CurrentVal'][i]),
-                            xytext=(15,15), textcoords='offset points', arrowprops=dict(arrowstyle='-|>'))
-        plt.ylabel("Portfolio Value")
-        plt.legend()    #(loc='upper left')
-        plt.grid()
+            plt.annotate('Total Qty='+ str(buys['PurchaseQTY'][i]) + " "+buys['Status'][i], 
+                        (mdates.datestr2num(buys['PurchaseDate'][i]) + 1, buys['CurrentVal'][i] + 1),
+                        xycoords='data',
+                        xytext=(mdates.datestr2num(buys['PurchaseDate'][i]), buys['CurrentVal'][i]), 
+                        textcoords='data', arrowprops=dict(arrowstyle='-|>'),
+                        horizontalalignment="left", bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
+                        fontsize='small')
+        ax1.set_ylabel("Portfolio Value")
+        self.setAxesCommonConfig(ax1, 'Portfolio performance - ' + self.script)
 
         # now plot 2nd set of graph
         #ax2 = plt.subplot(312, sharex=ax1)
         ax2 = plt.subplot(222)
-        plt.plot(self.dfScript['Close'], label='Daily Close Price')
+        ax2.set_label('One year performance') 
+
+        sdateyearback = self.getPastDateFromToday(1)
+
+        buys= self.dfScript.loc[self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][0]]
+        buys = buys[buys['Status'] != '']
+
+        ax2.plot(self.dfScript.loc[self.dfScript.index[:] >= 
+            self.dfholdingvalues['PurchaseDate'][0], 'Close'], label='Daily Close Price for last year')
+            #self.dfholdingvalues['PurchaseDate'][self.dfholdingvalues.shape[0]-1], 'Close'], label='Daily Close Price for last year')
         
-        plt.plot(buys.index, self.dfScript['Close'].loc[buys.index], marker="*", markersize=10, color='b', label='Buy transaction', linestyle='None')
+        ax2.plot(buys.index, self.dfScript['Close'].loc[buys.index], marker="*", markersize=5, color='b', label='Buy transaction', linestyle='None')
+        prevqty = 0
         for i in range(len(self.dfholdingvalues.index)):
-            plt.annotate('Qty='+ str(self.dfholdingvalues['PurchaseQTY'][i]) + " @ "+self.dfholdingvalues['PurchasePrice'][i], (mdates.datestr2num(self.dfholdingvalues['PurchaseDate'][i]), float(self.dfholdingvalues['PurchasePrice'][i])),
-                            xytext=(15,15), textcoords='offset points', arrowprops=dict(arrowstyle='-|>'))
+            prevqty = self.dfholdingvalues['PurchaseQTY'][i] - prevqty
+            plt.annotate('Qty='+ str(prevqty) + " @ "+self.dfholdingvalues['PurchasePrice'][i], 
+                        (mdates.datestr2num(self.dfholdingvalues['PurchaseDate'][i]) + 1, float(self.dfholdingvalues['PurchasePrice'][i])+1),
+                        xycoords='data', 
+                        xytext=(mdates.datestr2num(self.dfholdingvalues['PurchaseDate'][i]) + 1, float(self.dfholdingvalues['PurchasePrice'][i])+1), 
+                        textcoords='data', arrowprops=dict(arrowstyle='-|>'),
+                        horizontalalignment="left", bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
+                        fontsize='small')
+            
 
-        plt.plot(self.dfScript['Short_Mean'], label='Short Mean')
-        plt.plot(self.dfScript['Long_Mean'], label='Long Mean')
+        ax2.plot(self.dfScript.loc[self.dfScript.index[:] >= 
+            self.dfholdingvalues['PurchaseDate'][0], 'Short_Mean'], label='Short Mean')
+        ax2.plot(self.dfScript.loc[self.dfScript.index[:] >= 
+            self.dfholdingvalues['PurchaseDate'][0], 'Long_Mean'], label='Long Mean')
 
-        buys_suggested=self.dfScript.loc[self.dfScript['Order'] == 1, 'Order']
+        #buys_suggested=self.dfScript.loc[self.dfScript['Order'] == 1, 'Order']
+        
+        buys_suggested= self.dfScript.loc[self.dfScript.index[:] >= 
+            self.dfholdingvalues['PurchaseDate'][0]]
+        buys_suggested = buys_suggested[buys_suggested['Order'] == 1]
+        
         #plt.plot(buys.index, self.dfScript.columns['Adj Close'].loc[buys.index], marker=6, markersize=10, color='g', label='buy', linestyle='None')
-        plt.plot(buys_suggested.index, self.dfScript['Close'].loc[buys_suggested.index], marker=6, markersize=10, color='b', label='Buy', linestyle='None')
+        ax2.plot(buys_suggested.index, self.dfScript['Close'].loc[buys_suggested.index], marker=6, markersize=5, color='b', label='Suggested buy', linestyle='None')
 
-        sells_suggested=self.dfScript.loc[self.dfScript['Order'] == 0, 'Order']
+        #sells_suggested=self.dfScript.loc[self.dfScript['Order'] == 0, 'Order']
+        sells_suggested= self.dfScript.loc[self.dfScript.index[:] >= 
+            self.dfholdingvalues['PurchaseDate'][0]]
+        sells_suggested = buys_suggested[buys_suggested['Order'] == 0]
+
+
         #plt.plot(sells.index, self.dfScript.column['Adj Close'].loc[sells.index], marker=7, markersize=10, color='r', label='sell', linestyle='None')
-        plt.plot(sells_suggested.index, self.dfScript['Close'].loc[sells_suggested.index], marker=7, markersize=10, color='r', label='Sell', linestyle='None')
+        ax2.plot(sells_suggested.index, self.dfScript['Close'].loc[sells_suggested.index], marker=7, markersize=5, color='r', label='Suggested sell', linestyle='None')
 
-        plt.ylabel('Price')
-        plt.legend()    #(loc='upper left')
-        plt.grid()
-
-        # Now plot 3rd set of graph for cum returns
-        #ax3 = plt.subplot(313, sharex=ax1)
-        ax3 = plt.subplot(223)
-        plt.plot(self.dfScript['CumReturns'], label='Cumulative Returns')
-        plt.ylabel('Cumulative Returns')
-        plt.legend()    #(loc='upper left')
-        plt.grid()
+        ax2.set_ylabel('Price')
+        self.setAxesCommonConfig(ax2, 'Market comparison - ' + self.script)
 
         # Now plot 3rd set of graph for cum returns
         #ax3 = plt.subplot(313, sharex=ax1)
-        ax3 = plt.subplot(224)
-        plt.plot(self.dfScript['Returns'], label='Daily Returns')
-        plt.ylabel('Daily Returns')
-        plt.legend()    #(loc='upper left')
-        plt.grid()
+        ax3 = plt.subplot(223)  
+        ax3.set_label('Cumulative Returns') 
+        ax3.plot(self.dfScript['CumReturns'], label='Cumulative Returns')
+        ax3.set_ylabel('Cumulative Returns')
+        self.setAxesCommonConfig(ax3, 'Cumulative returns - ' + self.script)
 
-        plt.suptitle(self.script)
+        # Now plot 3rd set of graph for cum returns
+        #ax3 = plt.subplot(313, sharex=ax1)
+        ax4 = plt.subplot(224)
+        ax4.set_label('Daily Returns') 
+        ax4.plot(self.dfScript['Returns'], label='Daily Returns')
+        ax4.set_ylabel('Daily Returns')
+        self.setAxesCommonConfig(ax4, 'Daily returns - ' + self.script)
         plt.show()
 
     """ findScriptPerformance
@@ -322,7 +384,7 @@ class BackTestSMA:
                 self.dfScript = testobj.loadDaily(self.script)
             else:
                 self.dfScript, meta_data = self.ts.get_daily(symbol=self.script, outputsize='full')
-            self.dfScript.sort_index(axis=0, inplace=True)
+            self.dfScript.sort_index(axis=0, ascending=False, inplace=True)
         except ValueError as error:
             msgbx.showerror("Alpha Vantage error", error)
             return
@@ -696,18 +758,18 @@ class BackTestSMA:
         #now we calculare relative returns for each day
         #rt=(pt−(pt−1))/(pt−1)=(pt/(pt−1))−1
         self.dfScript['returns']=(self.dfScript['Adj Close']/((self.dfScript['Adj Close']).shift(1))) - 1
-        print(self.dfScript)
+        #print(self.dfScript)
         #We have only returns when we trade. That means that we multiply the returns with 
         # the buying signal.
         self.dfScript['returns']=self.dfScript['returns']*self.dfScript['order']
-        print(self.dfScript)
+        #print(self.dfScript)
         #Since we reinvest all returns, we need to take a cumulative product
         #  over the last column.
         # it=((it−1)+(it−1)*rt)=(1+rt)*(it−1),i0=1
 
         self.dfScript['cumreturns']=(1+self.dfScript.returns).cumprod()
 
-        print(self.dfScript)
+        #print(self.dfScript)
 
         #self.dfScript.plot()
         #plt.show()

@@ -249,14 +249,6 @@ class PrepareTestData:
         ts = TimeSeries('XXXX', output_format='pandas')
         padf, pameta = ts.get_daily('HDFC.BSE')
 
-        print(dailydf.head())
-
-        print(padf.head())
-
-        print(csvdf.head())
-
-        input()
-
 """if __name__ == "__main__":
     obj = PrepareTestData()
     obj.loadDaily('HDFC.BSE')
