@@ -39,6 +39,8 @@ class classGetQuote(Toplevel):
             self.search_symbol_combo_text.set(argscript)
         #self.configure(padx=5, pady=10)
 
+        self.wm_protocol("WM_DELETE_WINDOW", self.OnClose)
+
         self.iscancel = False
 
         #check box buttons
@@ -101,7 +103,7 @@ class classGetQuote(Toplevel):
         self.btn_search_script = ttk.Button(self, text="Search Script", command=self.btnSearchScript)
         self.btn_get_quote = ttk.Button(self, text="Get Quote", command=self.btnGetQuote)
         self.btn_get_daily_close = ttk.Button(self, text="Show selected graphs", command=self.btnGetDailyClose)
-        self.btn_cancel = ttk.Button(self, text="Cancel", command=self.btnCancel)
+        self.btn_cancel = ttk.Button(self, text="Close", command=self.btnCancel)
         self.btn_add_script = ttk.Button(self, text="Add script", command=self.btnAddScript)
 
         self.checkdaily = ttk.Checkbutton(self.frame1, text="Daily close", variable=self.bdaily, onvalue=True)
@@ -167,6 +169,10 @@ class classGetQuote(Toplevel):
         self.grid_rowconfigure(1, weight=1)
         self.grid_rowconfigure(2, weight=1)
     """
+
+    def OnClose(self):
+        self.destroy()
+
     def btnGetQuote(self):
         self.getQuoteFromMarket()
         
@@ -304,8 +310,10 @@ class classGetQuote(Toplevel):
                 msgbx.showerror('Get Quote', 'No script selected')
                 self.focus_force()
                 return
-            ts = TimeSeries(self.key, output_format='pandas')
-            ti = TechIndicators(self.key, output_format='pandas')
+
+            if(self.bool_test):
+                ts = TimeSeries(self.key, output_format='pandas')
+                ti = TechIndicators(self.key, output_format='pandas')
 
             self.graphctr = 1
             self.f.clear()

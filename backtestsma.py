@@ -17,30 +17,46 @@ function to buildBackTest():
     will get the daily adjusted time series
 
 """
+from tkinter import *
+from tkinter import ttk
+from tkinter import messagebox as msgbx
 from alpha_vantage.timeseries import TimeSeries
 from alpha_vantage.techindicators import TechIndicators
 import pandas as pd
 from pandas import DataFrame
+import datetime
 from datetime import date
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 import matplotlib.dates as mdates
+from matplotlib.pyplot import Figure
+from matplotlib import interactive
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+
+
 from scripttree import ScriptTreeView
-from tkinter import messagebox as msgbx
 
 from testdata import *
 
-class BackTestSMA:
-    def __init__(self, argkey=None, argscript=None, argscripttree=None, 
+class BackTestSMA(Toplevel):
+    def __init__(self, master=None, argkey=None, argscript=None, argscripttree=None, 
                 arglistholdingcols=None, argstartdt=None, argenddt=None, argavgsmall=None, 
                 argavglarge=None, argIsTest=False):
-        super().__init__()
+        Toplevel.__init__(self, master=master)
         self.key = argkey
         self.script = argscript
         self.startdt = argstartdt
         self.enddt = argenddt
+        self.graphctr=1
+
+        self.wm_state(newstate='zoomed') #maximize window, this works only for Win OS
+        self.wm_title("Performance graphs: " + self.script)
+
+        self.wm_protocol("WM_DELETE_WINDOW", self.OnClose)
+        #numbers for SMA
         self.avgsmall = argavgsmall
         self.avglarge = argavglarge
+        
         self.bool_test = argIsTest
 
         if(self.bool_test == False):
@@ -49,6 +65,24 @@ class BackTestSMA:
 
         self.treeofscripts = argscripttree
         self.dfholdingvalues = DataFrame()
+        self.buys = DataFrame()
+        self.dfScript = DataFrame()
+
+        self.f = Figure(figsize=(12.8,9.5), dpi=100, facecolor='w', edgecolor='k', tight_layout=True, linewidth=0.9)
+        self.output_canvas=FigureCanvasTkAgg(self.f, master=self)
+        self.toolbar_frame=Frame(master=self)
+        self.toolbar = NavigationToolbar2Tk(self.output_canvas, self.toolbar_frame)
+
+        self.output_canvas.get_tk_widget().grid(row=0, column=0, columnspan=17, sticky=(N, E, W, S))
+        self.toolbar_frame.grid(row=1, column=0, columnspan=17, rowspan=1, sticky=(N, E, W, S))
+        self.toolbar.grid(row=0, column=2, sticky=(N, W))
+
+    def show(self):
+        self.wm_deiconify()
+        self.wait_window()
+
+    def OnClose(self):
+        self.destroy()
 
     """ method - getScriptDataFromTree
         builds a DataFrame for all the portfolio holding values extracted from Tree
@@ -87,7 +121,7 @@ class BackTestSMA:
                 d = {'PurchaseDate': [row_val[1]], 'PurchasePrice':[row_val[0]], 
                     'PurchaseQTY':[row_val[2]], 'Commission':[row_val[3]], 
                     'CostofInvestment':[row_val[4]], 'CurrentValue':[row_val[5]],
-                    'Status':[row_val[6]]}
+                    'Status':[row_val[6]], 'CumulativeQTY':['0.00']}
                 #tempDF = DataFrame.from_dict(data=d, orient='index')
                 tempDF = DataFrame(d)
                 #tempDF = tempDF.transpose()
@@ -95,16 +129,21 @@ class BackTestSMA:
         #self.dfholdingvalues.set_index('PurchaseDate')
         convert_type={'PurchaseQTY':float}
         self.dfholdingvalues = self.dfholdingvalues.astype(convert_type)
+        convert_type={'CumulativeQTY':float}
+        self.dfholdingvalues = self.dfholdingvalues.astype(convert_type)
         convert_type={'Commission':float}
         self.dfholdingvalues = self.dfholdingvalues.astype(convert_type)
+        convert_type={'PurchasePrice':float}
+        self.dfholdingvalues = self.dfholdingvalues.astype(convert_type)
+
         self.dfholdingvalues.sort_values('PurchaseDate', axis=0, inplace=True, ignore_index=True)
         sumoflastrows=0
         imax = self.dfholdingvalues.shape[0]
         for i in range(imax):
             #self.dfholdingvalues['PurchaseQTY'][i]=(self.dfholdingvalues['PurchaseQTY'][i])+sumoflastrows
             #sumoflastrows=self.dfholdingvalues['PurchaseQTY'][i]
-            self.dfholdingvalues.loc[i, 'PurchaseQTY'] = self.dfholdingvalues.loc[i, 'PurchaseQTY']+sumoflastrows
-            sumoflastrows=self.dfholdingvalues.loc[i, 'PurchaseQTY']
+            self.dfholdingvalues.loc[i, 'CumulativeQTY'] = self.dfholdingvalues.loc[i, 'PurchaseQTY']+sumoflastrows
+            sumoflastrows=self.dfholdingvalues.loc[i, 'CumulativeQTY']
 
     """ setCurrentValInMarketDF
         In this method we will need to add three columns to the Alpha returned DF
@@ -147,7 +186,10 @@ class BackTestSMA:
             if(i < imax-1): #we have still not last row
                 self.dfScript.loc[((self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][i]) & 
                                 (self.dfScript.index[:] < self.dfholdingvalues['PurchaseDate'][i+1])), 'PurchaseDate']=self.dfholdingvalues['PurchaseDate'][i]
-                
+
+                self.dfScript.loc[((self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][i]) & 
+                                (self.dfScript.index[:] < self.dfholdingvalues['PurchaseDate'][i+1])), 'CumulativeQTY']=self.dfholdingvalues['CumulativeQTY'][i]
+
                 self.dfScript.loc[((self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][i]) & 
                                 (self.dfScript.index[:] < self.dfholdingvalues['PurchaseDate'][i+1])), 'PurchaseQTY']=self.dfholdingvalues['PurchaseQTY'][i]
 
@@ -159,6 +201,8 @@ class BackTestSMA:
             else:
                 self.dfScript.loc[(self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][i]), 'PurchaseDate']=self.dfholdingvalues['PurchaseDate'][i]
 
+                self.dfScript.loc[(self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][i]), 'CumulativeQTY']=self.dfholdingvalues['CumulativeQTY'][i]
+
                 self.dfScript.loc[(self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][i]), 'PurchaseQTY']=self.dfholdingvalues['PurchaseQTY'][i]
 
                 self.dfScript.loc[(self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][i]), 'Commission']=self.dfholdingvalues['Commission'][i]
@@ -166,7 +210,8 @@ class BackTestSMA:
                 #self.dfScript.loc[(self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][i]), 'CurrentVal'] = self.dfScript.loc[(self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][i]), 'PurchaseQTY'] * self.dfScript.loc[(self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][i]), 'Close']
             
             self.dfScript.loc[(self.dfScript.index[:] == self.dfholdingvalues['PurchaseDate'][i]), 'Status']=self.dfholdingvalues['Status'][i]
-        self.dfScript['CurrentVal'] = self.dfScript['PurchaseQTY'] * self.dfScript['Close']
+            self.dfScript.loc[(self.dfScript.index[:] == self.dfholdingvalues['PurchaseDate'][i]), 'PurchasePrice']=self.dfholdingvalues['PurchasePrice'][i]
+        self.dfScript['CurrentVal'] = self.dfScript['CumulativeQTY'] * self.dfScript['Close']
 
     """ changeColNameTypeofDailyTS
         d
@@ -176,7 +221,9 @@ class BackTestSMA:
         self.dfScript=self.dfScript.rename(columns={'1. open':'Open', '2. high':'High', '3. low':'Low', '4. close':'Close', '5. volume':'Volume'})
                 #Add new columns
         self.dfScript['PurchaseDate'] = ""
+        self.dfScript['PurchasePrice'] = 0.00
         self.dfScript['PurchaseQTY'] = 0.00
+        self.dfScript['CumulativeQTY'] = 0.00
         self.dfScript['CurrentVal'] = 0.00
         self.dfScript['Commission'] = 0.00
         self.dfScript['Status'] = ""
@@ -188,7 +235,11 @@ class BackTestSMA:
 
         convert_type={'Close':float}
         self.dfScript = self.dfScript.astype(convert_type)
+        convert_type={'PurchasePrice':float}
+        self.dfScript = self.dfScript.astype(convert_type)
         convert_type={'PurchaseQTY':float}
+        self.dfScript = self.dfScript.astype(convert_type)
+        convert_type={'CumulativeQTY':float}
         self.dfScript = self.dfScript.astype(convert_type)
         convert_type={'Commission':float}
         self.dfScript = self.dfScript.astype(convert_type)
@@ -227,12 +278,12 @@ class BackTestSMA:
         #now we calculare relative returns for each day
         #rt=(pt−(pt−1))/(pt−1)=(pt/(pt−1))−1
         self.dfScript['Returns']=(self.dfScript['Close']/((self.dfScript['Close']).shift(1))) - 1
-        self.dfScript.loc[self.dfScript.index[:], 'Returns']=(self.dfScript['Close']/((self.dfScript['Close']).shift(1))) - 1
+        #self.dfScript.loc[self.dfScript.index[:], 'Returns']=(self.dfScript['Close']/((self.dfScript['Close']).shift(1))) - 1
 
         #We have only returns when we trade. That means that we multiply the returns with 
         # the buying signal.
         self.dfScript['Returns']=self.dfScript['Returns']*self.dfScript['Order']
-        self.dfScript.loc[self.dfScript.index[:], 'Returns']=self.dfScript['Returns']*self.dfScript['Order']
+        #self.dfScript.loc[self.dfScript.index[:], 'Returns']=self.dfScript['Returns']*self.dfScript['Order']
         
         #Since we reinvest all returns, we need to take a cumulative product
         #  over the last column.
@@ -253,45 +304,112 @@ class BackTestSMA:
     # argLookbackYears - is the no of years we want to go back from today
     # if today is 2020-03-23 & argLookbackYears = 1, return will be 2019-03-23
     # the expetion takes care of leap year
-    def getPastDateFromToday(self, argLookbackYears):
+    def getPastDateFromDate(self, argFromDate=date.today(), argLookbackYears=1):
         try:
-            dt = date.today()
+            dt = argFromDate
             dt = dt.replace(year=dt.year-argLookbackYears)
         except ValueError:
             dt = dt.replace(year=dt.year-argLookbackYears, day=dt.day-1)
         return str(dt)
 
-    """ plotPerformanceGraphTS
-        d
-    """
-    def plotPerformanceGraphTS(self):
-        f_temp=Figure(figsize=(60, 60), dpi=80, facecolor='w', edgecolor='k')
-        
-        f_temp.suptitle(self.script) #size='xx-small', y=.996, weight='semibold')
 
+    def plotPortfolioPerformanceAX(self):
+        ax1 = self.f.add_subplot(2, 2, 1, label='Portfolio performance') 
+        ax1.plot(self.dfScript.loc[self.dfScript.index[:] >= 
+            self.dfholdingvalues['PurchaseDate'][self.dfholdingvalues.shape[0]-1], 'CurrentVal'], 
+            label='Portfolio price')
+        self.buys= self.dfScript.loc[self.dfScript.index[:] >= 
+            self.dfholdingvalues['PurchaseDate'][self.dfholdingvalues.shape[0]-1]]
+        self.buys = self.buys[self.buys['Status'] != '']
+        ax1.plot(self.buys.index, self.dfScript['CurrentVal'].loc[self.buys.index], 
+            marker="*", markersize=8, color='b', label='Total QTY', linestyle='None')
+        for i in range(len(self.buys.index)):
+            ax1.annotate('Total Qty='+ str(self.buys['CumulativeQTY'][i]) + " "+self.buys['Status'][i], 
+                        (mdates.datestr2num(self.buys['PurchaseDate'][i]), self.buys['CurrentVal'][i]),
+                        xycoords='data',
+                        xytext=(mdates.datestr2num(self.buys['PurchaseDate'][i]) + 1, self.buys['CurrentVal'][i]), 
+                        textcoords='data', arrowprops=dict(arrowstyle='-|>'),
+                        horizontalalignment="left", bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
+                        fontsize='small')
+        ax1.set_ylabel("Portfolio Value")
+        self.setAxesCommonConfig(ax1, 'Portfolio performance - ' + self.script)
+
+    #plots market data year from the first purchase date
+    def plotMarketData(self):
+        ax2 = self.f.add_subplot(2, 2, 2, label='Market Data') 
+        
+        ssincedate = datetime.datetime.strptime(self.dfholdingvalues['PurchaseDate'][0], "%Y-%m-%d")
+        ssincedate = date(ssincedate.year, ssincedate.month, ssincedate.day)
+        
+        syearpastfirst = self.getPastDateFromDate(argFromDate=ssincedate, argLookbackYears=1)
+
+        #ax2.plot(self.dfScript.loc[self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][0], 'Close'], label='Daily Close from first purchase')
+        ax2.plot(self.dfScript.loc[self.dfScript.index[:] >= syearpastfirst, 'Close'], 
+                label='Close - Year from first purchase')
+
+        #self.buys= self.dfScript.loc[self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][0]]
+        self.buys= self.dfScript.loc[self.dfScript.index[:] >= syearpastfirst]
+        self.buys = self.buys[self.buys['Status'] != '']
+
+        ax2.plot(self.buys.index, self.dfScript['Close'].loc[self.buys.index], 
+            marker="*", markersize=8, color='b', label='QTY purchased', linestyle='None')
+        
+        for i in range(len(self.buys.index)):
+            ax2.annotate('Qty='+ str(self.buys['PurchaseQTY'][i]) + " @ "+ str(self.buys['PurchasePrice'][i]), 
+                        (mdates.datestr2num(self.buys['PurchaseDate'][i]), float(self.buys['PurchasePrice'][i])),
+                        xycoords='data', 
+                        xytext=(mdates.datestr2num(self.buys['PurchaseDate'][i]) + 1, float(self.buys['PurchasePrice'][i])), 
+                        textcoords='data', arrowprops=dict(arrowstyle='-|>'),
+                        horizontalalignment="left", bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
+                        fontsize='small')
+
+        #ax2.plot(self.dfScript.loc[self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][0], 'Short_Mean'], label='Short Mean')
+        ax2.plot(self.dfScript.loc[self.dfScript.index[:] >= syearpastfirst, 'Short_Mean'], label='Short Mean')
+        #ax2.plot(self.dfScript.loc[self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][0], 'Long_Mean'], label='Long Mean')
+        ax2.plot(self.dfScript.loc[self.dfScript.index[:] >= syearpastfirst, 'Long_Mean'], label='Long Mean')
+
+        #self.buys_suggested= self.dfScript.loc[self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][0]]
+        buys_suggested= self.dfScript.loc[self.dfScript.index[:] >= syearpastfirst]
+        buys_suggested = buys_suggested[buys_suggested['Order'] == 1]
+        
+        ax2.plot(buys_suggested.index, self.dfScript['Close'].loc[buys_suggested.index], 
+                marker=6, markersize=8, color='b', label='Buy', linestyle='None')
+
+        #sells_suggested=self.dfScript.loc[self.dfScript['Order'] == 0, 'Order']
+        #sells_suggested= self.dfScript.loc[self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][0]]
+        sells_suggested= self.dfScript.loc[self.dfScript.index[:] >= syearpastfirst]
+        sells_suggested = sells_suggested[sells_suggested['Order'] == 0]
+
+        ax2.plot(sells_suggested.index, self.dfScript['Close'].loc[sells_suggested.index], 
+                marker=7, markersize=8, color='r', label='Sell', linestyle='None')
+
+        ax2.set_ylabel('Close')
+        self.setAxesCommonConfig(ax2, 'Market Data - ' + self.script)
+
+    def plotPerformanceGraphTS(self):
         #first 3 & 1 means we want to show 3 graphs in 1 column
         #last 1 indicates the sequence number of the current graph
         ax1 = plt.subplot(221)
         ax1.set_label('Portfolio Performance') 
         
-        #first plot the self portfolio performance using CurrentVal columns in dfScript
+        # first plot the self portfolio performance using CurrentVal columns in dfScript
         ax1.plot(self.dfScript.loc[self.dfScript.index[:] >= 
             self.dfholdingvalues['PurchaseDate'][self.dfholdingvalues.shape[0]-1], 'CurrentVal'], label='Portfolio price')
         #ax1.plot(self.dfScript['CurrentVal'], label='Portfolio price')
         
         # now we will put markers where the user has bought the scripts and show cumulative qty
-        #buys=self.dfScript.loc[(self.dfScript['Status'] != ''), ['PurchaseDate', 'PurchaseQTY', 'Status']]
-        #buys=self.dfScript.loc[(self.dfScript['Status'] != ''), :]
-        buys= self.dfScript.loc[self.dfScript.index[:] >= 
+        #self.buys=self.dfScript.loc[(self.dfScript['Status'] != ''), ['PurchaseDate', 'PurchaseQTY', 'Status']]
+        #self.buys=self.dfScript.loc[(self.dfScript['Status'] != ''), :]
+        self.buys= self.dfScript.loc[self.dfScript.index[:] >= 
             self.dfholdingvalues['PurchaseDate'][self.dfholdingvalues.shape[0]-1]]
-        buys = buys[buys['Status'] != '']
+        self.buys = self.buys[self.buys['Status'] != '']
 
-        ax1.plot(buys.index, self.dfScript['CurrentVal'].loc[buys.index], marker="*", markersize=5, color='b', label='Buy transaction', linestyle='None')
-        for i in range(len(buys.index)):
-            plt.annotate('Total Qty='+ str(buys['PurchaseQTY'][i]) + " "+buys['Status'][i], 
-                        (mdates.datestr2num(buys['PurchaseDate'][i]) + 1, buys['CurrentVal'][i] + 1),
+        ax1.plot(self.buys.index, self.dfScript['CurrentVal'].loc[self.buys.index], marker="*", markersize=5, color='b', label='Buy transaction', linestyle='None')
+        for i in range(len(self.buys.index)):
+            plt.annotate('Total Qty='+ str(self.buys['PurchaseQTY'][i]) + " "+self.buys['Status'][i], 
+                        (mdates.datestr2num(self.buys['PurchaseDate'][i]), self.buys['CurrentVal'][i]),
                         xycoords='data',
-                        xytext=(mdates.datestr2num(buys['PurchaseDate'][i]), buys['CurrentVal'][i]), 
+                        xytext=(mdates.datestr2num(self.buys['PurchaseDate'][i]) + 1, self.buys['CurrentVal'][i]), 
                         textcoords='data', arrowprops=dict(arrowstyle='-|>'),
                         horizontalalignment="left", bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
                         fontsize='small')
@@ -303,23 +421,23 @@ class BackTestSMA:
         ax2 = plt.subplot(222)
         ax2.set_label('One year performance') 
 
-        sdateyearback = self.getPastDateFromToday(1)
+        sdateyearback = self.getPastDateFromDate(argFromDate=date.today(), argLookbackYears=1)
 
-        buys= self.dfScript.loc[self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][0]]
-        buys = buys[buys['Status'] != '']
+        self.buys= self.dfScript.loc[self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][0]]
+        self.buys = self.buys[self.buys['Status'] != '']
 
         ax2.plot(self.dfScript.loc[self.dfScript.index[:] >= 
             self.dfholdingvalues['PurchaseDate'][0], 'Close'], label='Daily Close Price for last year')
             #self.dfholdingvalues['PurchaseDate'][self.dfholdingvalues.shape[0]-1], 'Close'], label='Daily Close Price for last year')
         
-        ax2.plot(buys.index, self.dfScript['Close'].loc[buys.index], marker="*", markersize=5, color='b', label='Buy transaction', linestyle='None')
+        ax2.plot(self.buys.index, self.dfScript['Close'].loc[self.buys.index], marker="*", markersize=5, color='b', label='Buy transaction', linestyle='None')
         prevqty = 0
         for i in range(len(self.dfholdingvalues.index)):
             prevqty = self.dfholdingvalues['PurchaseQTY'][i] - prevqty
             plt.annotate('Qty='+ str(prevqty) + " @ "+self.dfholdingvalues['PurchasePrice'][i], 
-                        (mdates.datestr2num(self.dfholdingvalues['PurchaseDate'][i]) + 1, float(self.dfholdingvalues['PurchasePrice'][i])+1),
+                        (mdates.datestr2num(self.dfholdingvalues['PurchaseDate'][i]), float(self.dfholdingvalues['PurchasePrice'][i])),
                         xycoords='data', 
-                        xytext=(mdates.datestr2num(self.dfholdingvalues['PurchaseDate'][i]) + 1, float(self.dfholdingvalues['PurchasePrice'][i])+1), 
+                        xytext=(mdates.datestr2num(self.dfholdingvalues['PurchaseDate'][i]) + 1, float(self.dfholdingvalues['PurchasePrice'][i])), 
                         textcoords='data', arrowprops=dict(arrowstyle='-|>'),
                         horizontalalignment="left", bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
                         fontsize='small')
@@ -330,19 +448,19 @@ class BackTestSMA:
         ax2.plot(self.dfScript.loc[self.dfScript.index[:] >= 
             self.dfholdingvalues['PurchaseDate'][0], 'Long_Mean'], label='Long Mean')
 
-        #buys_suggested=self.dfScript.loc[self.dfScript['Order'] == 1, 'Order']
+        #self.buys_suggested=self.dfScript.loc[self.dfScript['Order'] == 1, 'Order']
         
-        buys_suggested= self.dfScript.loc[self.dfScript.index[:] >= 
+        self.buys_suggested= self.dfScript.loc[self.dfScript.index[:] >= 
             self.dfholdingvalues['PurchaseDate'][0]]
-        buys_suggested = buys_suggested[buys_suggested['Order'] == 1]
+        self.buys_suggested = self.buys_suggested[self.buys_suggested['Order'] == 1]
         
-        #plt.plot(buys.index, self.dfScript.columns['Adj Close'].loc[buys.index], marker=6, markersize=10, color='g', label='buy', linestyle='None')
-        ax2.plot(buys_suggested.index, self.dfScript['Close'].loc[buys_suggested.index], marker=6, markersize=5, color='b', label='Suggested buy', linestyle='None')
+        #plt.plot(self.buys.index, self.dfScript.columns['Adj Close'].loc[self.buys.index], marker=6, markersize=10, color='g', label='buy', linestyle='None')
+        ax2.plot(self.buys_suggested.index, self.dfScript['Close'].loc[self.buys_suggested.index], marker=6, markersize=5, color='b', label='Suggested buy', linestyle='None')
 
         #sells_suggested=self.dfScript.loc[self.dfScript['Order'] == 0, 'Order']
         sells_suggested= self.dfScript.loc[self.dfScript.index[:] >= 
             self.dfholdingvalues['PurchaseDate'][0]]
-        sells_suggested = buys_suggested[buys_suggested['Order'] == 0]
+        sells_suggested = self.buys_suggested[self.buys_suggested['Order'] == 0]
 
 
         #plt.plot(sells.index, self.dfScript.column['Adj Close'].loc[sells.index], marker=7, markersize=10, color='r', label='sell', linestyle='None')
@@ -391,8 +509,9 @@ class BackTestSMA:
         self.changeColNameTypeofDailyTS()
         self.setCurrentValInMarketDF()
         self.addPerformance()
-        self.plotPerformanceGraphTS()
-
+        #self.plotPerformanceGraphTS()
+        self.plotPortfolioPerformanceAX()
+        self.plotMarketData()
 
         """ Method - getData(self): Not used
             get_daily_adjusted returns data and metadata in DF
@@ -775,8 +894,7 @@ class BackTestSMA:
         #plt.show()
     
     """  plotgraphs - Not used
-            s
-    """
+            s    """
     def plotgraphsNotUsed(self):
         f_temp=Figure(figsize=(15, 6), dpi=80, facecolor='w', edgecolor='k')
 
@@ -814,10 +932,9 @@ class BackTestSMA:
         plt.suptitle(self.script)
         plt.show()
 
-"""if __name__ == "__main__":
-    obj = BackTestSMA('XXXX', 'BSE:HDFC', str(date.today()), '2020-02-10', 5, 10)
-    obj.getScriptDataFromTree()
-    #obj.getData()
-    #obj.plotgraphs()
-    input()
-"""
+    #if __name__ == "__main__":
+        #obj = BackTestSMA('XXXX', 'BSE:HDFC', str(date.today()), '2020-02-10', 5, 10)
+        #obj.getScriptDataFromTree()
+        #obj.getData()
+        #obj.plotgraphs()
+        #input()

@@ -313,15 +313,17 @@ class PortfolioManager:
             msgbx.showwarning("Warning", "Please select valid row")
             return
         # Now get the purchase price if available
-        holdinvalobj = BackTestSMA(argkey='XXXX', argscript=script_name, argscripttree=self.output_tree, argavgsmall=10, 
+        holdinvalobj = BackTestSMA(argkey=self.key, argscript=script_name, argscripttree=self.output_tree, argavgsmall=10, 
             argavglarge=20)
         holdinvalobj.findScriptPerformance()
+        holdinvalobj.show()
         return
 
 
     # command handler for stock quote button
     def menuGetStockQuote(self):
-        obj = classGetQuote(master=self.content, argoutputtree=self.output_tree, argIsTest=self.bool_test).show()
+        obj = classGetQuote(master=self.content, argoutputtree=self.output_tree, argIsTest=self.bool_test)
+        obj.show()
         return;
 
     # command handler for intra day
@@ -1085,7 +1087,7 @@ class PortfolioManager:
                     self.annotate_state[0].set_visible(False)
                 self.annotate_state[0] = self.ax[0].annotate("Price: " + str(event.ydata), 
                         xy=(event.xdata, event.ydata), xycoords='data', 
-                        xytext=(event.xdata + 1, event.ydata + 1), textcoords='data',
+                        xytext=(event.xdata + 1, event.ydata), textcoords='data',
                         horizontalalignment="left", arrowprops=dict(arrowstyle="simple", 
                         connectionstyle="arc3,rad=-0.2"),
                         bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
