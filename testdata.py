@@ -42,9 +42,13 @@ class PrepareTestData:
         
         return csvdf
 
-    def loadSMA(self, argScript):
+    def loadSMA(self, argScript='', argPeriod=0):
         try:
-            csvdf = pd.read_csv('.\\ScriptData\\' + 'SMA_'+argScript+'.csv')
+            if(argPeriod == 0):
+                csvdf = pd.read_csv('.\\ScriptData\\' + 'SMA_'+argScript+'.csv')
+            else:
+                csvdf = pd.read_csv('.\\ScriptData\\' + 'SMA_'+str(argPeriod)+ '_'+argScript+'.csv')
+
             convert_type={'SMA':float}
             csvdf = csvdf.astype(convert_type)
 

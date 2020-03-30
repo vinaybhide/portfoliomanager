@@ -314,7 +314,7 @@ class PortfolioManager:
             return
         # Now get the purchase price if available
         holdinvalobj = BackTestSMA(argkey=self.key, argscript=script_name, argscripttree=self.output_tree, argavgsmall=10, 
-            argavglarge=20)
+            argavglarge=20, argIsTest=self.bool_test)
         holdinvalobj.findScriptPerformance()
         holdinvalobj.show()
         return
