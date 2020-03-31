@@ -1,3 +1,4 @@
+#v0.8 - Candlestick graphs
 #v0.7 - Base version with all graphs and bug fixes, added code to github desktop
 #v0.6
 #v0.5
@@ -445,8 +446,8 @@ class PortfolioManager:
         self.dictgraphmenu[argAxesIndex][argAxesKey] = (self.dictgraphmenu[argAxesIndex][argAxesKey][0], self.dictgraphmenu[argAxesIndex][argAxesKey][1], self.graphctr)
         self.graphctr += 1
 
-        self.ax[argAxesIndex].tick_params(direction='out', length=6, width=2, colors='r',
-            grid_color='r', grid_alpha=0.5, labelsize='xx-small')
+        self.ax[argAxesIndex].tick_params(direction='out', length=6, width=2, colors='black',
+            grid_color='black', grid_alpha=0.5, labelsize='xx-small')
         self.ax[argAxesIndex].tick_params(axis='x', labelrotation=30)
 
         self.ax[argAxesIndex].grid(True)

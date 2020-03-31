@@ -1,3 +1,4 @@
+#v0.8 - Candlestick graphs
 #v0.7 - Base version with all graphs and bug fixes
 #v0.6
 #v0.5
@@ -292,8 +293,8 @@ class classGetQuote(Toplevel):
         self.pastdate = date(strtoday.year-argYears, strtoday.month, strtoday.day)
         self.pastdate = str(self.pastdate)"""
     def setAxesCommonConfig(self, argAxes, argTitle):
-        argAxes.tick_params(direction='out', length=6, width=2, colors='r',
-            grid_color='r', grid_alpha=0.5, labelsize='xx-small')
+        argAxes.tick_params(direction='out', length=6, width=2, colors='black',
+            grid_color='black', grid_alpha=0.5, labelsize='xx-small')
         argAxes.tick_params(axis='x', labelrotation=30)
 
         argAxes.grid(True)

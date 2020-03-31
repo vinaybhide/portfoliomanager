@@ -1,3 +1,4 @@
+#v0.8 - Candlestick graphs
 #v0.7 - Base version with all graphs and bug fixes. Test
 #v0.6
 #v0.5
@@ -67,7 +68,8 @@ class BackTestSMA(Toplevel):
         #self.dfSMAShort = DataFrame()
         #self.dfSMALong = DataFrame()
 
-        self.f = Figure(figsize=(12.8,9.5), dpi=100, facecolor='w', edgecolor='k', tight_layout=True, linewidth=0.9)
+        #self.f = Figure(figsize=(12.8,9.5), dpi=100, facecolor='w', edgecolor='k', tight_layout=True, linewidth=0.9)
+        self.f = Figure(figsize=(12.8,4.5), dpi=100, facecolor='w', edgecolor='k', tight_layout=True, linewidth=0.9)
         self.output_canvas=FigureCanvasTkAgg(self.f, master=self)
         self.toolbar_frame=Frame(master=self)
         self.toolbar = NavigationToolbar2Tk(self.output_canvas, self.toolbar_frame)
@@ -300,9 +302,10 @@ class BackTestSMA(Toplevel):
         self.dfScript['CumReturns']=(1+self.dfScript.Returns).cumprod()
     
     
-    def setAxesCommonConfig(self, argAxes, argTitle):
-        argAxes.tick_params(direction='out', length=6, width=2, colors='r',
-            grid_color='r', grid_alpha=0.5, labelsize='small')
+    def setAxesCommonConfig(self, argAxes, argTitle, argYlabel):
+        argAxes.set_ylabel(argYlabel, fontsize = 'xx-small', color='black')
+        argAxes.tick_params(direction='out', length=6, width=2, colors='black',
+            grid_color='black', grid_alpha=0.5, labelsize='xx-small')
         argAxes.tick_params(axis='x', labelrotation=30)
 
         argAxes.grid(True)
@@ -353,8 +356,15 @@ class BackTestSMA(Toplevel):
                         textcoords='data', arrowprops=dict(arrowstyle='-|>'),
                         horizontalalignment="left", bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
                         fontsize='small')
-        ax1.set_ylabel("Portfolio Value")
-        self.setAxesCommonConfig(ax1, 'Portfolio performance - ' + self.script)
+        self.setAxesCommonConfig(ax1, 'Portfolio performance - ' + self.script, "Portfolio Value")
+
+    def showCandelAnnotation(self, argAxis, argTextToShow, argX, argY, argXYcoords, 
+                            argXText, argYText, argTextcoords, argHA, argVA, argFontsize):
+        argAxis.annotate(argTextToShow, 
+                xy=(argX, argY),
+                xycoords=argXYcoords, 
+                xytext=(argXText, argYText), 
+                textcoords=argTextcoords, ha=argHA, va=argVA, fontsize=argFontsize, color='red', annotation_clip=True)
 
     def plotMarketDataCandleSticks(self):
         ax2 = self.f.add_subplot(2, 2, 2, label='Open High Low Close') 
@@ -363,7 +373,7 @@ class BackTestSMA(Toplevel):
         ssincedate = date(ssincedate.year, ssincedate.month, ssincedate.day)
         
         syearpastfirst = self.getPastDateFromDate(argFromDate=ssincedate, argLookbackYears=1)
-        width=1
+        width=0.5
         width2=0.1
         #'1. open':'Open', '2. high':'High', '3. low':'Low', '4. close':'Close', '5. volume':'Volume
         #pricesup = self.dfScript.loc[self.dfScript.index[:] >= syearpastfirst]
@@ -378,46 +388,107 @@ class BackTestSMA(Toplevel):
         rect1 = ax2.bar(pricesup.index,pricesup.Close-pricesup.Open,width,bottom=pricesup.Open,color='g', label='Closed higher')
         i = 0
         for eachrec in rect1:
-            ax2.annotate('O:' + '{:.2f}'.format(eachrec.xy[1]), 
-                    xy=(eachrec.xy[0], eachrec.xy[1]),
+            amttext=''
+            if(pricesup.Low[i] != pricesup.Open[i]):
+                amttext = 'O=' + '{:.2f}'.format(pricesup.Open[i])
+            else:
+                amttext='L=O=' + '{:.2f}'.format(pricesup.Open[i])
+            
+            self.showCandelAnnotation(ax2, amttext, eachrec.xy[0], pricesup.Open[i], 'data', 
+                            eachrec.xy[0], pricesup.Open[i], 'data', 'right', 'bottom', 'xx-small')
+            """ax2.annotate(amttext, 
+                    xy=(eachrec.xy[0], pricesup.Open[i]),
                     xycoords='data', 
-                    xytext=(eachrec.xy[0], eachrec.xy[1]), 
-                    textcoords='data', ha='center', va='bottom', fontsize='xx-small', annotation_clip=True)
+                    xytext=(eachrec.xy[0], pricesup.Open[i]), 
+                    textcoords='data', ha='right', va='bottom', fontsize='xx-small', annotation_clip=True)"""
+            
+            amttext = ''
+            if(pricesup.High[i] != pricesup.Close[i]):
+                amttext = 'C=' + '{:.2f}'.format(pricesup.Close[i])
+            else:
+                amttext = 'H=C=' + '{:.2f}'.format(pricesup.Close[i])
 
-            ax2.annotate('C:' + '{:.2f}'.format(pricesup.Close[i]), 
+            self.showCandelAnnotation(ax2, amttext, eachrec.xy[0], pricesup.Close[i], 'data', 
+                            eachrec.xy[0], pricesup.Close[i], 'data', 'right', 'top', 'xx-small')
+
+            """ax2.annotate(amttext, 
                     xy=(eachrec.xy[0], pricesup.Close[i]),
                     xycoords='data', 
                     xytext=(eachrec.xy[0], pricesup.Close[i]), 
-                    textcoords='data', ha='center', va='top', fontsize='xx-small', annotation_clip=True)
+                    textcoords='data', ha='right', va='top', fontsize='xx-small', annotation_clip=True)"""
             i += 1
 
         rect2 = ax2.bar(pricesup.index,pricesup.High-pricesup.Close,width2,bottom=pricesup.Close,color='g')
         i = 0
         for eachrec in rect2:
-            ax2.annotate('H:' + '{:.2f}'.format(pricesup.High[i]), 
-                    xy=(eachrec.xy[0], pricesup.High[i]),
-                    xycoords='data', 
-                    xytext=(eachrec.xy[0], pricesup.High[i]), 
-                    textcoords='data', ha='center', va='bottom', fontsize='xx-small', annotation_clip=True)
+            if(pricesup.High[i] != pricesup.Close[i]):
+                self.showCandelAnnotation(ax2, 'H:' + '{:.2f}'.format(pricesup.High[i]), 
+                                eachrec.xy[0], pricesup.High[i], 'data', 
+                                eachrec.xy[0], pricesup.High[i], 'data', 'right', 'top', 'xx-small')
+                """ax2.annotate('H:' + '{:.2f}'.format(pricesup.High[i]), 
+                        xy=(eachrec.xy[0], pricesup.High[i]),
+                        xycoords='data', 
+                        xytext=(eachrec.xy[0], pricesup.High[i]), 
+                        textcoords='data', ha='right', va='top', fontsize='xx-small', annotation_clip=True)"""
             i += 1
         
         rect3 = ax2.bar(pricesup.index,pricesup.Low-pricesup.Open,width2,bottom=pricesup.Open,color='g')
         i = 0
         for eachrec in rect3:
-            ax2.annotate('L:' + '{:.2f}'.format(pricesup.Low[i]), 
-                    xy=(eachrec.xy[0], pricesup.Low[i]),
-                    xycoords='data', 
-                    xytext=(eachrec.xy[0], pricesup.Low[i]), 
-                    textcoords='data', ha='center', va='top', fontsize='xx-small', annotation_clip=True)
+            if(pricesup.Low[i] != pricesup.Open[i]):
+                self.showCandelAnnotation(ax2, 'L:' + '{:.2f}'.format(pricesup.Low[i]), 
+                                eachrec.xy[0], pricesup.Low[i], 'data', 
+                                eachrec.xy[0], pricesup.Low[i], 'data', 'right', 'bottom', 'xx-small')
+                """ax2.annotate('L:' + '{:.2f}'.format(pricesup.Low[i]), 
+                        xy=(eachrec.xy[0], pricesup.Low[i]),
+                        xycoords='data', 
+                        xytext=(eachrec.xy[0], pricesup.Low[i]), 
+                        textcoords='data', ha='right', va='bottom', fontsize='xx-small', annotation_clip=True)"""
+            i += 1
 
-        """rect4 = ax2.bar(pricesdown.index,pricesdown.Close-pricesdown.Open,width,bottom=pricesdown.Open,color='black', label='Closed lower')
+        rect4 = ax2.bar(pricesdown.index,pricesdown.Close-pricesdown.Open,width,bottom=pricesdown.Open,color='black', label='Closed lower')
+        i = 0
+        for eachrec in rect4:
+            amttext=''
+            if(pricesdown.High[i] != pricesdown.Open[i]):
+                amttext = 'O=' + '{:.2f}'.format(pricesdown.Open[i])
+            else:
+                amttext='H=O=' + '{:.2f}'.format(pricesdown.Open[i])
+            
+            self.showCandelAnnotation(ax2, amttext, eachrec.xy[0], pricesdown.Open[i], 'data', 
+                            eachrec.xy[0], pricesdown.Open[i], 'data', 'right', 'top', 'xx-small')
+            
+            amttext = ''
+            if(pricesdown.Low[i] != pricesdown.Close[i]):
+                amttext = 'C=' + '{:.2f}'.format(pricesdown.Close[i])
+            else:
+                amttext = 'L=C=' + '{:.2f}'.format(pricesdown.Close[i])
+
+            self.showCandelAnnotation(ax2, amttext, eachrec.xy[0], pricesdown.Close[i], 'data', 
+                            eachrec.xy[0], pricesdown.Close[i], 'data', 'right', 'bottom', 'xx-small')
+            i += 1
+
         rect5 = ax2.bar(pricesdown.index,pricesdown.High-pricesdown.Open,width2,bottom=pricesdown.Open,color='black')
-        rect6 = ax2.bar(pricesdown.index,pricesdown.Low-pricesdown.Close,width2, bottom=pricesdown.Close,color='black')"""
+        i = 0
+        for eachrec in rect5:
+            if(pricesdown.High[i] != pricesdown.Open[i]):
+                self.showCandelAnnotation(ax2, 'H:' + '{:.2f}'.format(pricesdown.High[i]), 
+                                eachrec.xy[0], pricesdown.High[i], 'data', 
+                                eachrec.xy[0], pricesdown.High[i], 'data', 'right', 'top', 'xx-small')
+            i+=1
+
+        rect6 = ax2.bar(pricesdown.index,pricesdown.Low-pricesdown.Close,width2, bottom=pricesdown.Close,color='black')
+        i = 0
+        for eachrec in rect6:
+            if(pricesdown.Low[i] != pricesdown.Close[i]):
+                self.showCandelAnnotation(ax2, 'L:' + '{:.2f}'.format(pricesdown.Low[i]), 
+                                eachrec.xy[0], pricesdown.Low[i], 'data', 
+                                eachrec.xy[0], pricesdown.Low[i], 'data', 'right', 'top', 'xx-small')
+            i+=1
 
         #ax2.set_yticks(list(pricesdown.Open) + list(pricesup.Close))
 
-        ax2.set_ylabel("Prices")
-        self.setAxesCommonConfig(ax2, 'Candlestick - ' + self.script)
+        self.setAxesCommonConfig(ax2, 'Candlestick - ' + self.script, 'Prices')
 
     #plots market data year from the first purchase date
     def plotMarketData(self):
@@ -468,8 +539,7 @@ class BackTestSMA(Toplevel):
         ax3.plot(sells_suggested.index, self.dfScript['Close'].loc[sells_suggested.index], 
                 marker=7, markersize=2, color='r', label='Sell', linestyle='None')
 
-        ax3.set_ylabel('Price')
-        self.setAxesCommonConfig(ax3, 'Market Data - ' + self.script)
+        self.setAxesCommonConfig(ax3, 'Market Data - ' + self.script, 'Price')
 
     def plotScriptReturns(self):
         ax4 = self.f.add_subplot(2, 2, 4, label='Market Data') 
@@ -485,8 +555,7 @@ class BackTestSMA(Toplevel):
         ax4.plot(self.dfScript.loc[self.dfScript.index[:] >= syearpastfirst, 'Returns'], 
                 label='Daily Returns - Year from first purchase')
 
-        ax4.set_ylabel('Returns')
-        self.setAxesCommonConfig(ax4, 'Returns - ' + self.script)
+        self.setAxesCommonConfig(ax4, 'Returns - ' + self.script, 'Returns')
 
     def plotPerformanceGraphTS(self):
         #first 3 & 1 means we want to show 3 graphs in 1 column
@@ -515,8 +584,8 @@ class BackTestSMA(Toplevel):
                         textcoords='data', arrowprops=dict(arrowstyle='-|>'),
                         horizontalalignment="left", bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
                         fontsize='small')
-        ax1.set_ylabel("Portfolio Value")
-        self.setAxesCommonConfig(ax1, 'Portfolio performance - ' + self.script)
+        #ax1.set_ylabel("Portfolio Value")
+        self.setAxesCommonConfig(ax1, 'Portfolio performance - ' + self.script, 'Portfolio Value')
 
         # now plot 2nd set of graph
         #ax2 = plt.subplot(312, sharex=ax1)
@@ -568,24 +637,24 @@ class BackTestSMA(Toplevel):
         #plt.plot(sells.index, self.dfScript.column['Adj Close'].loc[sells.index], marker=7, markersize=10, color='r', label='sell', linestyle='None')
         ax2.plot(sells_suggested.index, self.dfScript['Close'].loc[sells_suggested.index], marker=7, markersize=5, color='r', label='Suggested sell', linestyle='None')
 
-        ax2.set_ylabel('Price')
-        self.setAxesCommonConfig(ax2, 'Market comparison - ' + self.script)
+        #ax2.set_ylabel('Price')
+        self.setAxesCommonConfig(ax2, 'Market comparison - ' + self.script, 'Price')
 
         # Now plot 3rd set of graph for cum returns
         #ax3 = plt.subplot(313, sharex=ax1)
         ax3 = plt.subplot(223)  
         ax3.set_label('Cumulative Returns') 
         ax3.plot(self.dfScript['CumReturns'], label='Cumulative Returns')
-        ax3.set_ylabel('Cumulative Returns')
-        self.setAxesCommonConfig(ax3, 'Cumulative returns - ' + self.script)
+        #ax3.set_ylabel('Cumulative Returns')
+        self.setAxesCommonConfig(ax3, 'Cumulative returns - ' + self.script, 'Cumulative Returns')
 
         # Now plot 3rd set of graph for cum returns
         #ax3 = plt.subplot(313, sharex=ax1)
         ax4 = plt.subplot(224)
         ax4.set_label('Daily Returns') 
         ax4.plot(self.dfScript['Returns'], label='Daily Returns')
-        ax4.set_ylabel('Daily Returns')
-        self.setAxesCommonConfig(ax4, 'Daily returns - ' + self.script)
+        #ax4.set_ylabel('Daily Returns')
+        self.setAxesCommonConfig(ax4, 'Daily returns - ' + self.script, 'Daily Returns')
         plt.show()
 
     """ findScriptPerformance
@@ -623,11 +692,10 @@ class BackTestSMA(Toplevel):
         self.plotMarketDataCandleSticks()
         self.plotMarketData()
         self.plotScriptReturns()
-        
+
+        self.f.set_tight_layout(True)
         self.output_canvas.draw()
         self.toolbar.update()
-
-
 
 
         """ Method - getData(self): Not used
