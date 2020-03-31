@@ -1,3 +1,4 @@
+#v0.8 - Candlestick graphs
 #v0.7 - Base version with all graphs and bug fixes
 #v0.6
 #0.5
@@ -19,6 +20,8 @@ class classAddNewModifyScript(Toplevel):
         self.key = argkey
         
         self.wm_title("Add/Modify script")
+
+        self.wm_protocol("WM_DELETE_WINDOW", self.OnClose)
 
         self.configure(padx=5, pady=10)
 
@@ -96,6 +99,9 @@ class classAddNewModifyScript(Toplevel):
         self.btn_add_script.grid_configure(row=2, column=1, padx=5, pady=5)
         self.btn_cancel.grid_configure(row=2, column=2, padx=5, pady=5)
 
+    def OnClose(self):
+        self.destroy()
+
     def btnCalculateCost(self):
         try:
             if(len(self.commision_text.get()) == 0):
@@ -133,9 +139,9 @@ class classAddNewModifyScript(Toplevel):
         self.wm_deiconify()
         self.btn_add_script.focus_force()
         self.wait_window()
-        if(self.iscancel == True):
-            return None
-        else:
+        #if(self.iscancel == True):
+        #    return None
+        if(self.iscancel == False):
             dictReturn = dict()
             dictReturn['Symbol'] = self.script
             dictReturn['Purchase Price'] = self.price_text.get()
@@ -144,6 +150,7 @@ class classAddNewModifyScript(Toplevel):
             dictReturn['Commission Paid'] = self.commision_text.get()
             dictReturn['Cost of Investment'] = str(self.cost)
             return dictReturn
+        return None
     
     def btnSearchScript(self):
         try:

@@ -1,3 +1,4 @@
+#v0.8 - Candlestick graphs
 #v0.7 - Base version with all graphs and bug fixes
 #v0.6
 #v0.5
@@ -38,6 +39,8 @@ class classGetQuote(Toplevel):
             self.wm_title("Get Quote: " + self.script)
             self.search_symbol_combo_text.set(argscript)
         #self.configure(padx=5, pady=10)
+
+        self.wm_protocol("WM_DELETE_WINDOW", self.OnClose)
 
         self.iscancel = False
 
@@ -101,7 +104,7 @@ class classGetQuote(Toplevel):
         self.btn_search_script = ttk.Button(self, text="Search Script", command=self.btnSearchScript)
         self.btn_get_quote = ttk.Button(self, text="Get Quote", command=self.btnGetQuote)
         self.btn_get_daily_close = ttk.Button(self, text="Show selected graphs", command=self.btnGetDailyClose)
-        self.btn_cancel = ttk.Button(self, text="Cancel", command=self.btnCancel)
+        self.btn_cancel = ttk.Button(self, text="Close", command=self.btnCancel)
         self.btn_add_script = ttk.Button(self, text="Add script", command=self.btnAddScript)
 
         self.checkdaily = ttk.Checkbutton(self.frame1, text="Daily close", variable=self.bdaily, onvalue=True)
@@ -167,6 +170,10 @@ class classGetQuote(Toplevel):
         self.grid_rowconfigure(1, weight=1)
         self.grid_rowconfigure(2, weight=1)
     """
+
+    def OnClose(self):
+        self.destroy()
+
     def btnGetQuote(self):
         self.getQuoteFromMarket()
         
@@ -285,6 +292,14 @@ class classGetQuote(Toplevel):
         """strtoday = date.today()
         self.pastdate = date(strtoday.year-argYears, strtoday.month, strtoday.day)
         self.pastdate = str(self.pastdate)"""
+    def setAxesCommonConfig(self, argAxes, argTitle):
+        argAxes.tick_params(direction='out', length=6, width=2, colors='black',
+            grid_color='black', grid_alpha=0.5, labelsize='xx-small')
+        argAxes.tick_params(axis='x', labelrotation=30)
+
+        argAxes.grid(True)
+        argAxes.set_title(argTitle, size='xx-small')
+        argAxes.legend(fontsize='xx-small')
 
     def drawPastData(self):
         try:
@@ -296,8 +311,10 @@ class classGetQuote(Toplevel):
                 msgbx.showerror('Get Quote', 'No script selected')
                 self.focus_force()
                 return
-            ts = TimeSeries(self.key, output_format='pandas')
-            ti = TechIndicators(self.key, output_format='pandas')
+
+            if(self.bool_test):
+                ts = TimeSeries(self.key, output_format='pandas')
+                ti = TechIndicators(self.key, output_format='pandas')
 
             self.graphctr = 1
             self.f.clear()
@@ -312,12 +329,11 @@ class classGetQuote(Toplevel):
                 #self.f.add_subplot(3, 3, graphctr, label='Daily closing price', 
                 #    xlabel='Date', ylabel='Closing price').plot(self.dfdailyts['Close'], label='Daily closing price')
                 dfdata = dfdata.sort_index(axis=0, ascending=False)
-                dfdata=dfdata[dfdata.index[:] >= self.pastdate]
-                ax1 = self.f.add_subplot(3, 3, self.graphctr, title= 'Daily closing price', ylabel='Close')
-                ax1.plot(dfdata['4. close'], label='Daily closing price')
-                ax1.legend()
-                ax1.grid(True)
-                self.f.autofmt_xdate()
+                #dfdata=dfdata[dfdata.index[:] >= self.pastdate]
+                ax1 = self.f.add_subplot(3, 3, self.graphctr, label='Daily closing price') 
+                #ylabel='Close', 
+                ax1.plot(dfdata.loc[dfdata.index[:] >= self.pastdate, '4. close'], label='Daily close')
+                self.setAxesCommonConfig(ax1, 'Daily closing price')
                 self.graphctr += 1
 
             #intraday
@@ -328,12 +344,10 @@ class classGetQuote(Toplevel):
                 else:
                     dfdata, dfmetadata = ts.get_intraday(symbol=self.script)
                 dfdata = dfdata.sort_index(axis=0, ascending=False)
-                dfdata=dfdata[dfdata.index[:] >= self.pastdate]
-                ax2=self.f.add_subplot(3,3,self.graphctr, title='Intra-day close', ylabel='Intraday close')
-                ax2.plot(dfdata['4. close'], label='Intra-day close')
-                ax2.legend()
-                ax2.grid(True)
-                self.f.autofmt_xdate()
+                #dfdata=dfdata[dfdata.index[:] >= self.pastdate]
+                ax2=self.f.add_subplot(3,3,self.graphctr, label='Intra-day close')
+                ax2.plot(dfdata.loc[dfdata.index[:] >= self.pastdate, '4. close'], label='Intra-day close')
+                self.setAxesCommonConfig(ax2, 'Intra-day close')
                 self.graphctr += 1
             #sma
             if(self.bsma.get() == True):
@@ -343,13 +357,11 @@ class classGetQuote(Toplevel):
                 else:
                     dfdata, dfmetadata = ti.get_sma(symbol=self.script)
                 dfdata = dfdata.sort_index(axis=0, ascending=False)
-                dfdata=dfdata[dfdata.index[:] >= self.pastdate]
+                #dfdata=dfdata[dfdata.index[:] >= self.pastdate]
 
-                ax3 = self.f.add_subplot(3,3,self.graphctr, title='Simple moving avg', ylabel='SMA')
-                ax3.plot(dfdata['SMA'], label='Simple moving avg')
-                ax3.legend()
-                ax3.grid(True)
-                self.f.autofmt_xdate()
+                ax3 = self.f.add_subplot(3,3,self.graphctr, label='Simple moving avg')
+                ax3.plot(dfdata.loc[dfdata.index[:] >= self.pastdate,'SMA'], label='SMA')
+                self.setAxesCommonConfig(ax3, 'Simple moving avg')
                 self.graphctr += 1
 
             #ema
@@ -360,12 +372,10 @@ class classGetQuote(Toplevel):
                 else:
                     dfdata, dfmetadata = ti.get_ema(symbol=self.script)
                 dfdata = dfdata.sort_index(axis=0, ascending=False)
-                dfdata=dfdata[dfdata.index[:] >= self.pastdate]
-                ax4 = self.f.add_subplot(3,3,self.graphctr, title='Exponential moving avg', ylabel='EMA')
-                ax4.plot(dfdata['EMA'], label='Exponential moving avg')
-                ax4.legend()
-                ax4.grid(True)
-                self.f.autofmt_xdate()
+                #dfdata=dfdata[dfdata.index[:] >= self.pastdate]
+                ax4 = self.f.add_subplot(3,3,self.graphctr, label='Exponential moving avg')
+                ax4.plot(dfdata.loc[dfdata.index[:] >= self.pastdate,'EMA'], label='EMA')
+                self.setAxesCommonConfig(ax4, 'Exponential moving avg')
                 self.graphctr += 1
 
             #vwap returns one col = VWAP
@@ -376,13 +386,10 @@ class classGetQuote(Toplevel):
                 else:
                     dfdata, dfmetadata = ti.get_vwap(symbol=self.script)
                 dfdata = dfdata.sort_index(axis=0, ascending=False)
-                dfdata=dfdata[dfdata.index[:] >= self.pastdate]
-                ax5 = self.f.add_subplot(3,3,self.graphctr, title='Volume weighted avg price', ylabel='VWAP')
-                ax5.plot(dfdata['VWAP'], label='Vol weighted avg price')
-                ax5.legend()
-                ax5.grid(True)
-                if(6 < self.graphctr < 10):
-                    self.f.autofmt_xdate()
+                #dfdata=dfdata[dfdata.index[:] >= self.pastdate]
+                ax5 = self.f.add_subplot(3,3,self.graphctr, label='Vol weighted avg price')
+                ax5.plot(dfdata.loc[dfdata.index[:] >= self.pastdate,'VWAP'], label='VWAP')
+                self.setAxesCommonConfig(ax5, 'Volume weighted avg price')
                 self.graphctr += 1
 
             #macd returns 3 cols. For ex, "MACD_Signal": "-4.7394", "MACD": "-7.7800", "MACD_Hist": "-3.0406"
@@ -393,15 +400,12 @@ class classGetQuote(Toplevel):
                 else:
                     dfdata, dfmetadata = ti.get_macd(symbol=self.script)
                 dfdata = dfdata.sort_index(axis=0, ascending=False)
-                dfdata=dfdata[dfdata.index[:] >= self.pastdate]
-                ax6 = self.f.add_subplot(3,3,self.graphctr, title='Moving avg convergence/divergence', ylabel='MACD')
-                ax6.plot(dfdata['MACD_Signal'], 'b-', label='MACD Signal')
-                ax6.plot(dfdata['MACD'], 'y-', label='MACD')
-                ax6.plot(dfdata['MACD_Hist'], 'r-', label='MACD Hist')
-                ax6.legend()
-                ax6.grid(True)
-                if(6 < self.graphctr < 10):
-                    self.f.autofmt_xdate()
+                #dfdata=dfdata[dfdata.index[:] >= self.pastdate]
+                ax6 = self.f.add_subplot(3,3,self.graphctr, label='MACD')
+                ax6.plot(dfdata.loc[dfdata.index[:] >= self.pastdate,'MACD_Signal'], 'b-', label='MACD Signal')
+                ax6.plot(dfdata.loc[dfdata.index[:] >= self.pastdate,'MACD'], 'y-', label='MACD')
+                ax6.plot(dfdata.loc[dfdata.index[:] >= self.pastdate,'MACD_Hist'], 'r-', label='MACD Hist')
+                self.setAxesCommonConfig(ax6, 'Moving avg convergence/divergence')
                 self.graphctr += 1
 
             #rsi returns one col RSI
@@ -412,13 +416,10 @@ class classGetQuote(Toplevel):
                 else:
                     dfdata, dfmetadata = ti.get_rsi(symbol=self.script)
                 dfdata = dfdata.sort_index(axis=0, ascending=False)
-                dfdata=dfdata[dfdata.index[:] >= self.pastdate]
-                ax7 = self.f.add_subplot(3,3,self.graphctr, title='Relative strength index', ylabel='RSI')
-                ax7.plot(dfdata, label='Relative strength index')
-                ax7.legend()
-                ax7.grid(True)
-                if(6 < self.graphctr < 10):
-                    self.f.autofmt_xdate()
+                #dfdata=dfdata[dfdata.index[:] >= self.pastdate]
+                ax7 = self.f.add_subplot(3,3,self.graphctr, label='RSI')
+                ax7.plot(dfdata.loc[dfdata.index[:] >= self.pastdate, 'RSI'], label='RSI')
+                self.setAxesCommonConfig(ax7, 'Relative strength index')
                 self.graphctr += 1
 
             #adx returns one col ADX
@@ -429,13 +430,10 @@ class classGetQuote(Toplevel):
                 else:
                     dfdata, dfmetadata = ti.get_adx(symbol=self.script)
                 dfdata = dfdata.sort_index(axis=0, ascending=False)
-                dfdata=dfdata[dfdata.index[:] >= self.pastdate]
-                ax8 = self.f.add_subplot(3,3,self.graphctr, title='Average directional moving index', ylabel='ADX')
-                ax8.plot(dfdata, label='Average directional moving index')
-                ax8.legend()
-                ax8.grid(True)
-                if(6 < self.graphctr < 10):
-                    self.f.autofmt_xdate()
+                #dfdata=dfdata[dfdata.index[:] >= self.pastdate]
+                ax8 = self.f.add_subplot(3,3,self.graphctr, label='ADX')
+                ax8.plot(dfdata.loc[dfdata.index[:] >= self.pastdate, 'ADX'], label='ADX')
+                self.setAxesCommonConfig(ax8, 'Average directional moving index')
                 self.graphctr += 1
 
             #aroon returns two cols for ex "Aroon Up": "28.5714", "Aroon Down": "100.0000"
@@ -446,14 +444,11 @@ class classGetQuote(Toplevel):
                 else:
                     dfdata, dfmetadata = ti.get_aroon(symbol=self.script)
                 dfdata = dfdata.sort_index(axis=0, ascending=False)
-                dfdata=dfdata[dfdata.index[:] >= self.pastdate]
-                ax9 = self.f.add_subplot(3,3,self.graphctr, title='AROON', ylabel='AROON')
-                ax9.plot(dfdata['Aroon Up'], 'b-', label='Aroon Up')
-                ax9.plot(dfdata['Aroon Down'], 'r-', label='Aroon Down')
-                ax9.legend()
-                ax9.grid(True)
-                if(6 < self.graphctr < 10):
-                    self.f.autofmt_xdate()
+                #dfdata=dfdata[dfdata.index[:] >= self.pastdate]
+                ax9 = self.f.add_subplot(3,3,self.graphctr, label='AROON')
+                ax9.plot(dfdata.loc[dfdata.index[:] >= self.pastdate, 'Aroon Up'], 'b-', label='Aroon Up')
+                ax9.plot(dfdata.loc[dfdata.index[:] >= self.pastdate, 'Aroon Down'], 'r-', label='Aroon Down')
+                self.setAxesCommonConfig(ax9, 'AROON')
                 self.graphctr += 1
 
             #self.f.legend() #(loc='upper right')

@@ -1,3 +1,4 @@
+#v0.8 - Candlestick graphs
 #v0.6
 #v0.5
 #v0.4

@@ -1,3 +1,4 @@
+#v0.8 - Candlestick graphs
 #v0.7 - Base version with all graphs and bug fixes, added code to github desktop
 #v0.6
 #v0.5
@@ -313,15 +314,17 @@ class PortfolioManager:
             msgbx.showwarning("Warning", "Please select valid row")
             return
         # Now get the purchase price if available
-        holdinvalobj = BackTestSMA(argkey='XXXX', argscript=script_name, argscripttree=self.output_tree, argavgsmall=10, 
-            argavglarge=20)
+        holdinvalobj = BackTestSMA(argkey=self.key, argscript=script_name, argscripttree=self.output_tree, argavgsmall=10, 
+            argavglarge=20, argIsTest=self.bool_test)
         holdinvalobj.findScriptPerformance()
+        holdinvalobj.show()
         return
 
 
     # command handler for stock quote button
     def menuGetStockQuote(self):
-        obj = classGetQuote(master=self.content, argoutputtree=self.output_tree, argIsTest=self.bool_test).show()
+        obj = classGetQuote(master=self.content, argoutputtree=self.output_tree, argIsTest=self.bool_test)
+        obj.show()
         return;
 
     # command handler for intra day
@@ -426,7 +429,7 @@ class PortfolioManager:
     
     #common method to set figure variables called by each right click plot menu handlers
     def setFigureCommonConfig(self, script_name):
-        self.f.suptitle(script_name, size='small')
+        self.f.suptitle(script_name, size='xx-small', y=.996, weight='semibold')
         #self.f.tight_layout()
         #self.f.legend(loc='upper right')
 
@@ -442,6 +445,11 @@ class PortfolioManager:
             self.mouseClickMoveEnableDisable(True)
         self.dictgraphmenu[argAxesIndex][argAxesKey] = (self.dictgraphmenu[argAxesIndex][argAxesKey][0], self.dictgraphmenu[argAxesIndex][argAxesKey][1], self.graphctr)
         self.graphctr += 1
+
+        self.ax[argAxesIndex].tick_params(direction='out', length=6, width=2, colors='black',
+            grid_color='black', grid_alpha=0.5, labelsize='xx-small')
+        self.ax[argAxesIndex].tick_params(axis='x', labelrotation=30)
+
         self.ax[argAxesIndex].grid(True)
         self.ax[argAxesIndex].set_title(argTitle, size='xx-small')
         self.ax[argAxesIndex].legend(fontsize='xx-small')
@@ -534,9 +542,9 @@ class PortfolioManager:
             # Visualization
             self.ax[0].clear()
             #self.ax[0].set_visible(True)
-            self.ax[0] = self.f.add_subplot(self.dictgraphmenu[0]['m1'][0], self.dictgraphmenu[0]['m1'][1], self.graphctr, visible=True)#, title=script_name, label='Daily close price', xlabel='Date', ylabel='Closing price')
+            self.ax[0] = self.f.add_subplot(self.dictgraphmenu[0]['m1'][0], self.dictgraphmenu[0]['m1'][1], self.graphctr, visible=True, label='Daily Close Vs SMA')#, title=script_name, label='Daily close price', xlabel='Date', ylabel='Closing price')
             self.ax[0].plot(self.dfDaily['4. close'], label='Close')
-            self.ax[0].plot(self.dfDaily['4. close'], 'x', markersize=5)
+            self.ax[0].plot(self.dfDaily['4. close'], 'x', markersize=3)
             self.ax[0].plot(self.dfSMA.head(sizeofdaily)['SMA'], label='20 SMA')
 
             #commenting annotations
@@ -581,7 +589,7 @@ class PortfolioManager:
 
             # Visualization
             self.ax[1].clear()
-            self.ax[1] = self.f.add_subplot(self.dictgraphmenu[1]['m2'][0], self.dictgraphmenu[1]['m2'][1], self.graphctr, visible=True)#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
+            self.ax[1] = self.f.add_subplot(self.dictgraphmenu[1]['m2'][0], self.dictgraphmenu[1]['m2'][1], self.graphctr, visible=True, label='Intra-Day')#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
             self.ax[1].plot(self.dfIntra['4. close'], label='Intra-day')
 
             self.setAxesCommonConfig(1, 'm2', script_name, 'Intra-day')
@@ -612,8 +620,10 @@ class PortfolioManager:
             # Visualization
             self.ax[2].clear()
             #self.ax[2].set_visible(True)
-            self.ax[2] = self.f.add_subplot(self.dictgraphmenu[2]['m3'][0], self.dictgraphmenu[2]['m3'][1], self.graphctr, visible=True)#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
-            self.ax[2].plot(self.dfVWMP['VWAP'], label='VWAP')
+            self.ax[2] = self.f.add_subplot(self.dictgraphmenu[2]['m3'][0], self.dictgraphmenu[2]['m3'][1], self.graphctr, visible=True, label='VWAP')
+                #, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
+            sdateyearback = self.getPastDateFromToday(self.LookbackYears)
+            self.ax[2].plot(self.dfVWMP.loc[self.dfVWMP.index[:] >= sdateyearback, 'VWAP'], label='VWAP')
             self.setAxesCommonConfig(2, 'm3', script_name, 'Vol Wt Avg Price')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
@@ -644,11 +654,12 @@ class PortfolioManager:
             self.ax[3].clear()
             #self.ax[3].set_visible(True)
             #color = 'tab:red'
-            self.ax[3] = self.f.add_subplot(self.dictgraphmenu[3]['m4'][0], self.dictgraphmenu[3]['m4'][1], self.graphctr, visible=True)#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
+            self.ax[3] = self.f.add_subplot(self.dictgraphmenu[3]['m4'][0], self.dictgraphmenu[3]['m4'][1], self.graphctr, visible=True, label='RSI')#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
             #self.ax[3].tick_params(axis='y', labelcolor=color)
             #twinax = self.ax[3].twinx()
             #color = 'tab:blue'
-            self.ax[3].plot(self.dfRSI['RSI'], label='RSI')
+            sdateyearback = self.getPastDateFromToday(self.LookbackYears)
+            self.ax[3].plot(self.dfRSI.loc[self.dfRSI.index[:] >= sdateyearback, 'RSI'], label='RSI')
             #twinax.tick_params(axis='y', labelcolor=color)
 
             self.setAxesCommonConfig(3, 'm4', script_name, 'RSI')
@@ -681,8 +692,10 @@ class PortfolioManager:
             # Visualization
             self.ax[4].clear()
             #self.ax[4].set_visible(True)
-            self.ax[4] = self.f.add_subplot(self.dictgraphmenu[4]['m5'][0], self.dictgraphmenu[4]['m5'][1], self.graphctr, visible=True)#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
-            self.ax[4].plot(self.dfADX['ADX'], label='ADX')
+            self.ax[4] = self.f.add_subplot(self.dictgraphmenu[4]['m5'][0], self.dictgraphmenu[4]['m5'][1], self.graphctr, visible=True, label='ADX')
+            #, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
+            sdateyearback = self.getPastDateFromToday(self.LookbackYears)
+            self.ax[4].plot(self.dfADX.loc[self.dfADX.index[:] >= sdateyearback, 'ADX'], label='ADX')
             self.setAxesCommonConfig(4, 'm5', script_name, 'ADX')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
@@ -713,9 +726,11 @@ class PortfolioManager:
             # Visualization
             self.ax[5].clear()
             #self.ax[5].set_visible(True)
-            self.ax[5] = self.f.add_subplot(self.dictgraphmenu[5]['m6'][0], self.dictgraphmenu[5]['m6'][1], self.graphctr, visible=True)#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
-            self.ax[5].plot(self.dfStoch['SlowK'], 'b-', label='SlowK MA')
-            self.ax[5].plot(self.dfStoch['SlowD'], 'r-', label='SlowD MA')
+            self.ax[5] = self.f.add_subplot(self.dictgraphmenu[5]['m6'][0], self.dictgraphmenu[5]['m6'][1], self.graphctr, visible=True, label='STOCH')
+            #, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
+            sdateyearback = self.getPastDateFromToday(self.LookbackYears)
+            self.ax[5].plot(self.dfStoch.loc[self.dfStoch.index[:] >= sdateyearback, 'SlowK'], 'b-', label='SlowK MA')
+            self.ax[5].plot(self.dfStoch.loc[self.dfStoch.index[:] >= sdateyearback, 'SlowD'], 'r-', label='SlowD MA')
             self.setAxesCommonConfig(5, 'm6', script_name, 'Stoch Oscillator')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
@@ -745,10 +760,12 @@ class PortfolioManager:
             # Visualization
             self.ax[6].clear()
             #self.ax[6].set_visible(True)
-            self.ax[6] = self.f.add_subplot(self.dictgraphmenu[6]['m7'][0], self.dictgraphmenu[6]['m7'][1], self.graphctr, visible=True)#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
-            self.ax[6].plot(self.dfMACD['MACD_Signal'], 'r-', label='Signal')
-            self.ax[6].plot(self.dfMACD['MACD'], 'y-', label='MACD')
-            self.ax[6].plot(self.dfMACD['MACD_Hist'], 'b-', label='History')
+            self.ax[6] = self.f.add_subplot(self.dictgraphmenu[6]['m7'][0], self.dictgraphmenu[6]['m7'][1], self.graphctr, visible=True, label='MACD')
+            #, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
+            sdateyearback = self.getPastDateFromToday(self.LookbackYears)
+            self.ax[6].plot(self.dfMACD.loc[self.dfMACD.index[:] >= sdateyearback, 'MACD_Signal'], 'r-', label='Signal')
+            self.ax[6].plot(self.dfMACD.loc[self.dfMACD.index[:] >= sdateyearback, 'MACD'], 'y-', label='MACD')
+            self.ax[6].plot(self.dfMACD.loc[self.dfMACD.index[:] >= sdateyearback, 'MACD_Hist'], 'b-', label='History')
             self.setAxesCommonConfig(6, 'm7', script_name, 'Moving Avg conv')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
@@ -778,9 +795,11 @@ class PortfolioManager:
             # Visualization
             self.ax[7].clear()
             #self.ax[7].set_visible(True)
-            self.ax[7] = self.f.add_subplot(self.dictgraphmenu[7]['m8'][0], self.dictgraphmenu[7]['m8'][1], self.graphctr, visible=True)#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
-            self.ax[7].plot(self.dfAROON['Aroon Up'], 'r-', label='Up')
-            self.ax[7].plot(self.dfAROON['Aroon Down'], 'b-', label='Down')
+            self.ax[7] = self.f.add_subplot(self.dictgraphmenu[7]['m8'][0], self.dictgraphmenu[7]['m8'][1], self.graphctr, visible=True, label='AROON')
+                #, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
+            sdateyearback = self.getPastDateFromToday(self.LookbackYears)
+            self.ax[7].plot(self.dfAROON.loc[self.dfAROON.index[:] >= sdateyearback, 'Aroon Up'], 'r-', label='Up')
+            self.ax[7].plot(self.dfAROON.loc[self.dfAROON.index[:] >= sdateyearback, 'Aroon Down'], 'b-', label='Down')
             self.setAxesCommonConfig(7, 'm8', script_name, 'Aroon')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
@@ -812,10 +831,12 @@ class PortfolioManager:
             # Visualization
             self.ax[8].clear()
             #self.ax[8].set_visible(True)
-            self.ax[8] = self.f.add_subplot(self.dictgraphmenu[8]['m9'][0], self.dictgraphmenu[8]['m9'][1], self.graphctr, visible=True)#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
-            self.ax[8].plot(self.dfBBANDS['Real Middle Band'], 'r-', label='Middle')
-            self.ax[8].plot(self.dfBBANDS['Real Upper Band'], 'b-', label='Upper')
-            self.ax[8].plot(self.dfBBANDS['Real Lower Band'], 'y-', label='Lower')
+            self.ax[8] = self.f.add_subplot(self.dictgraphmenu[8]['m9'][0], self.dictgraphmenu[8]['m9'][1], self.graphctr, visible=True, label='BBANDS')
+            #, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
+            sdateyearback = self.getPastDateFromToday(self.LookbackYears)
+            self.ax[8].plot(self.dfBBANDS.loc[self.dfBBANDS.index[:] >= sdateyearback, 'Real Middle Band'], 'r-', label='Middle')
+            self.ax[8].plot(self.dfBBANDS.loc[self.dfBBANDS.index[:] >= sdateyearback, 'Real Upper Band'], 'b-', label='Upper')
+            self.ax[8].plot(self.dfBBANDS.loc[self.dfBBANDS.index[:] >= sdateyearback, 'Real Lower Band'], 'y-', label='Lower')
             self.setAxesCommonConfig(8, 'm9', script_name, 'Bollinger Bands')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
@@ -1053,9 +1074,7 @@ class PortfolioManager:
         seriesmatch = argDF.loc[self.dfDaily.index[:] == str(currdate), argColName]
         if(seriesmatch.empty == False):
             samount = str(argYData)
-            print(samount)
             found = samount.find(str(seriesmatch[0]))
-            print('found=' + str(found))
             if(found >=0):
                 return True
         return False
@@ -1067,10 +1086,13 @@ class PortfolioManager:
 
                 if(self.annotate_state[0] != None):
                     self.annotate_state[0].set_visible(False)
-                self.annotate_state[0] = self.ax[0].annotate("Price: " + str(event.ydata), xy=(event.xdata, event.ydata),
-                        xycoords='data', xytext=(event.xdata + 1, event.ydata + 1), textcoords='data',
-                        horizontalalignment="left", arrowprops=dict(arrowstyle="simple", connectionstyle="arc3,rad=-0.2"),
-                        bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), fontsize='xx-small')
+                self.annotate_state[0] = self.ax[0].annotate("Price: " + str(event.ydata), 
+                        xy=(event.xdata, event.ydata), xycoords='data', 
+                        xytext=(event.xdata + 1, event.ydata), textcoords='data',
+                        horizontalalignment="left", arrowprops=dict(arrowstyle="simple", 
+                        connectionstyle="arc3,rad=-0.2"),
+                        bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
+                        fontsize='xx-small')
                 self.annotate_state[0].set_visible(True)
                 self.output_canvas.draw()
 
