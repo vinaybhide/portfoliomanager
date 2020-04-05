@@ -53,3 +53,7 @@ v0.6 - Added test data support via downloaded file for all except get_quote_endp
       1.6 You can select existing portfolio file to open. You have to make sure that you have the specific script end point quote file
       1.7 Once the portfolio is open all functionality should work fine
  v0.7 - Base version with all graphs and bug fixes and also code identified for mouse move & click on graphs
+ v0.8 - Added OHLC Candlestick graph in backtestsma
+ v0.9
+      1. Added Research graph popup dialog - can be accessed via menu & left click on script graph
+      2. Added on mouse move show amount for DailyVsSMA graph. Needs improvement

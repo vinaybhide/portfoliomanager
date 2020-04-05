@@ -1,3 +1,4 @@
+#v0.9 - All research graph via menu & mouse click
 #v0.8 - Candlestick graphs
 #v0.7 - Base version with all graphs and bug fixes
 #v0.6
@@ -14,9 +15,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib import interactive
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-from datetime import date
 
-from backtestsma import *
 from addnewmodifyscript import classAddNewModifyScript
 from testdata import *
 
@@ -116,6 +115,9 @@ class classGetQuote(Toplevel):
         self.checkrsi = ttk.Checkbutton(self.frame1, text="RSI", variable=self.brsi, onvalue=True)
         self.checkadx = ttk.Checkbutton(self.frame1, text="ADX", variable=self.badx, onvalue=True)
         self.checkaroon = ttk.Checkbutton(self.frame1, text="AROON", variable=self.baroon, onvalue=True)
+
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
 
         self.search_symbol_label.grid_configure(row=0, column=0, sticky=(N, E), padx=5, pady=5)
         self.search_symbol_combo.grid_configure(row=0, column=1, sticky=(N,S,E,W), columnspan = 3, padx=5, pady=5)
@@ -245,6 +247,7 @@ class classGetQuote(Toplevel):
             msgbx.showerror("Search Symbol Error", str(e))
             #self.focus_force()
             return
+
     def commandEnterKey(self, event):
         #self.commandSearchSymbol()
         self.btnSearchScript()
@@ -465,3 +468,9 @@ class classGetQuote(Toplevel):
         self.dfdailyts=self.dfdailyts.rename(columns={'1. open':'Open', '2. high':'High', '3. low':'Low', '4. close':'Close', '5. volume':'Volume'})
                 #Add new columns
 
+    #if __name__ == "__main__":
+        #obj = BackTestSMA('XXXX', 'BSE:HDFC', str(date.today()), '2020-02-10', 5, 10)
+        #obj.getScriptDataFromTree()
+        #obj.getData()
+        #obj.plotgraphs()
+        #input()
