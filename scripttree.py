@@ -1,3 +1,4 @@
+#v0.9 - All research graph via menu & mouse click
 #v0.8 - Candlestick graphs
 #v0.6
 #v0.5

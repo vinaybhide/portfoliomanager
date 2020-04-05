@@ -1,3 +1,4 @@
+#v0.9 - All research graph via menu & mouse click
 #v0.8 - Candlestick graphs
 #v0.7 - Base version with all graphs and bug fixes, added code to github desktop
 #v0.6
@@ -53,6 +54,7 @@ from addnewmodifyscript import *
 from backtestsma import *
 from getquote import *
 from testdata import *
+from graphresearch import *
 
 class PortfolioManager:
     def __init__(self):
@@ -102,7 +104,7 @@ class PortfolioManager:
         self.content.grid(column=0, row=0, sticky=(N, S, E, W))
 
         # add main menu object
-        self.menu= Menu()
+        self.menu= Menu(master=self.root)
         self.root.config(menu=self.menu)
         # add file menu
         self.file_menu=Menu(self.menu, tearoff=0)
@@ -122,9 +124,14 @@ class PortfolioManager:
         self.script_menu.add_command(label="Refresh Selected Script with Market Price", command=self.menuRefreshScriptData)
         self.menu.add_cascade(label='Manage Portfolio', menu=self.script_menu)
 
+        # research script menu
+        self.research_menu=Menu(self.menu, tearoff=0)
+        self.research_menu.add_command(label="Graphs", command=self.menuResearchGraphs)
+        self.menu.add_cascade(label='Research', menu=self.research_menu)
+
         # add help menu
         self.help_menu=Menu(self.menu, tearoff=0)
-        self.help_menu.add_command(label="Test Mode (On/Off)", command=self.menuSetTestMode)
+        self.help_menu.add_command(label="Mode (Online/Offline)", command=self.menuSetTestMode)
         self.menu.add_cascade(label='Help', menu=self.help_menu)
 
         # plot variable used to plot 9 standard graphs, enabled via right click menu
@@ -320,6 +327,11 @@ class PortfolioManager:
         holdinvalobj.show()
         return
 
+    def menuResearchGraphs(self):
+        obj = classAllGraphs(master=self.content, argistestmode=self.bool_test, 
+                argkey=self.key, argscript='', argmenucalled=True, arggraphid=-1, 
+                argoutputtree=self.output_tree)
+        obj.InitializeWindow()
 
     # command handler for stock quote button
     def menuGetStockQuote(self):
@@ -477,14 +489,13 @@ class PortfolioManager:
     # Called from setAxesCommonConfig when graphctr = 1 to bind the events
     # Called from clearandresetGraphs when graphctr = 1 to unbind
     def mouseClickMoveEnableDisable(self, argbFlag):
-        return True
         if(argbFlag == True):
-            #self.cid_leftclick = self.output_canvas.callbacks.connect('button_press_event', self.on_click_graphs)
+            self.cid_leftclick = self.output_canvas.callbacks.connect('button_press_event', self.on_click_graphs)
             self.cid_mouse_move = self.output_canvas.callbacks.connect('motion_notify_event', self.on_mouse_move)
         else:
-            #if(self.cid_leftclick != None):
-            #    self.output_canvas.callbacks.disconnect(self.cid_leftclick)
-            #self.cid_leftclick = None
+            if(self.cid_leftclick != None):
+                self.output_canvas.callbacks.disconnect(self.cid_leftclick)
+            self.cid_leftclick = None
             if(self.cid_mouse_move != None):
                 self.output_canvas.callbacks.disconnect(self.cid_mouse_move)
             self.cid_mouse_move = None
@@ -973,7 +984,7 @@ class PortfolioManager:
         else:
             self.bool_test = True
             self.output_tree.btestmode = True
-            self.root.title('Stock Analytics - Test mode')
+            self.root.title('Stock Analytics - Offline mode')
             self.root.update()
 
         # File open menu handler
@@ -1041,29 +1052,31 @@ class PortfolioManager:
         savefilehandle.close()
 
     def on_click_graphs(self, event):
-        """if event.inaxes is not None:
+        if event.inaxes is not None:
             #msgbx.showinfo('If', 'xdata='+str(event.xdata) + '   ydata= ' + str(event.ydata))
+            graphid = -1
             if(event.inaxes == self.ax[0]):
-                msgbx.showinfo('If', 'ax[0]')
+                graphid = 0 #Daily
             elif (event.inaxes == self.ax[1]):
-                msgbx.showinfo('If', 'ax[1]')
+                graphid = 1 #intra
             elif (event.inaxes == self.ax[2]):
-                msgbx.showinfo('If', 'ax[2]')
+                graphid = 3 #VWAP
             elif (event.inaxes == self.ax[3]):
-                msgbx.showinfo('If', 'ax[3]')
+                graphid = 4 #RSI
             elif (event.inaxes == self.ax[4]):
-                msgbx.showinfo('If', 'ax[4]')
+                graphid = 5 #ADX
             elif (event.inaxes == self.ax[5]):
-                msgbx.showinfo('If', 'ax[5]')
+                graphid = 6 #STOCH
             elif (event.inaxes == self.ax[6]):
-                msgbx.showinfo('If', 'ax[6]')
+                graphid = 7 #MACD
             elif (event.inaxes == self.ax[7]):
-                msgbx.showinfo('If', 'ax[7]')
+                graphid = 8 #AROON
             elif (event.inaxes == self.ax[8]):
-                msgbx.showinfo('If', 'ax[8]')
-        else:
-            msgbx.showinfo('Else', 'Clicked ouside axes bounds but inside plot window')"""
-        return
+                graphid = 9 #BBANDS
+            obj = classAllGraphs(master=self.content, argistestmode=self.bool_test, argkey=self.key,
+                        argscript=self.currentScript, argmenucalled=False, arggraphid=graphid,
+                        argoutputtree=self.output_tree)
+            obj.InitializeWindow()
 
     def isPointOnGraphLine(self, argXData, argYData, argDF, argColName):
         #found = csvdf[csvdf['4. close'].astype('str').str.contains('1623.6')]
@@ -1079,6 +1092,7 @@ class PortfolioManager:
                 return True
         return False
 
+
     def on_mouse_move(self, event):
         if event.inaxes is not None:
             #msgbx.showinfo('If', 'xdata='+str(event.xdata) + '   ydata= ' + str(event.ydata))
@@ -1086,7 +1100,7 @@ class PortfolioManager:
 
                 if(self.annotate_state[0] != None):
                     self.annotate_state[0].set_visible(False)
-                self.annotate_state[0] = self.ax[0].annotate("Price: " + str(event.ydata), 
+                self.annotate_state[0] = self.ax[0].annotate('{:.2f}'.format(event.ydata), 
                         xy=(event.xdata, event.ydata), xycoords='data', 
                         xytext=(event.xdata + 1, event.ydata), textcoords='data',
                         horizontalalignment="left", arrowprops=dict(arrowstyle="simple", 
