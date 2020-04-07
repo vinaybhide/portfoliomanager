@@ -4,7 +4,7 @@ https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=HDFC.BSE&api
 https://www.alphavantage.co/query?function=SMA&symbol=HDFC.BSE&interval=daily&time_period=20&series_type=close&apikey=XXXX&datatype=csv
 https://www.alphavantage.co/query?function=EMA&symbol=HDFC.BSE&interval=daily&time_period=20&series_type=close&apikey=XXXX&datatype=csv
 https://www.alphavantage.co/query?function=VWAP&symbol=HDFC.BSE&interval=5min&apikey=XXXX&datatype=csv
-https://www.alphavantage.co/query?function=RSI&symbol=HDFC.BSE&interval=daily&time_period=20&series_type=close&apikey=XXXX&output=csv
+https://www.alphavantage.co/query?function=RSI&symbol=HDFC.BSE&interval=daily&time_period=20&series_type=close&apikey=XXXX&datatype=csv
 https://www.alphavantage.co/query?function=STOCH&symbol=HDFC.BSE&interval=daily&apikey=XXXX&datatype=csv
 https://www.alphavantage.co/query?function=MACD&symbol=HDFC.BSE&interval=daily&series_type=close&apikey=XXXX&datatype=csv
 https://www.alphavantage.co/query?function=AROON&symbol=HDFC.BSE&interval=daily&time_period=20&apikey=XXXX&datatype=csv
