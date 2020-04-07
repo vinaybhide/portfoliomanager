@@ -311,7 +311,7 @@ class BackTestSMA(Toplevel):
 
         argAxes.grid(True)
         argAxes.set_title(argTitle, size='small')
-        argAxes.legend(fontsize='small')
+        argAxes.legend(fontsize='xx-small')
 
     # argLookbackYears - is the no of years we want to go back from today
     # if today is 2020-03-23 & argLookbackYears = 1, return will be 2019-03-23
@@ -356,7 +356,7 @@ class BackTestSMA(Toplevel):
                         xytext=(mdates.datestr2num(self.getDateAfter(buys['PurchaseDate'][i])), buys['CurrentVal'][i]+2), 
                         textcoords='data', arrowprops=dict(arrowstyle='-|>'),
                         horizontalalignment="left", bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
-                        fontsize='small')
+                        fontsize='xx-small')
         self.setAxesCommonConfig(ax1, 'Portfolio performance - ' + self.script, "Portfolio Value")
 
     def showCandelAnnotation(self, argAxis, argTextToShow, argX, argY, argXYcoords, 
@@ -518,7 +518,7 @@ class BackTestSMA(Toplevel):
                         xytext=(mdates.datestr2num(self.getDateAfter(buys['PurchaseDate'][i])), float(buys['Close'][i])+2), 
                         textcoords='data', arrowprops=dict(arrowstyle='-|>'),
                         horizontalalignment="left", bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
-                        fontsize='small')
+                        fontsize='xx-small')
 
         #ax2.plot(self.dfScript.loc[self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][0], 'Short_Mean'], label='Short Mean')
         ax3.plot(self.dfScript.loc[self.dfScript.index[:] >= syearpastfirst, 'Short_Mean'], color = 'r', label='Short Mean')
@@ -529,16 +529,18 @@ class BackTestSMA(Toplevel):
         buys_suggested= self.dfScript.loc[self.dfScript.index[:] >= syearpastfirst]
         buys_suggested = buys_suggested[buys_suggested['Order'] == 1]
         
-        ax3.plot(buys_suggested.index, self.dfScript['Close'].loc[buys_suggested.index], 
-                marker=6, markersize=2, color='b', label='Buy', linestyle='None')
+        #Commenting temporarily
+        #ax3.plot(buys_suggested.index, self.dfScript['Close'].loc[buys_suggested.index], 
+        #        marker=6, markersize=2, color='b', label='Buy', linestyle='None')
 
         #sells_suggested=self.dfScript.loc[self.dfScript['Order'] == 0, 'Order']
         #sells_suggested= self.dfScript.loc[self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][0]]
         sells_suggested= self.dfScript.loc[self.dfScript.index[:] >= syearpastfirst]
         sells_suggested = sells_suggested[sells_suggested['Order'] == 0]
 
-        ax3.plot(sells_suggested.index, self.dfScript['Close'].loc[sells_suggested.index], 
-                marker=7, markersize=2, color='r', label='Sell', linestyle='None')
+        #Commenting temporarily
+        #ax3.plot(sells_suggested.index, self.dfScript['Close'].loc[sells_suggested.index], 
+        #        marker=7, markersize=2, color='r', label='Sell', linestyle='None')
 
         self.setAxesCommonConfig(ax3, 'Market Data - ' + self.script, 'Price')
 
@@ -558,7 +560,7 @@ class BackTestSMA(Toplevel):
 
         self.setAxesCommonConfig(ax4, 'Returns - ' + self.script, 'Returns')
 
-    def plotPerformanceGraphTS(self):
+    def NOTUSED_plotPerformanceGraphTS(self):
         #first 3 & 1 means we want to show 3 graphs in 1 column
         #last 1 indicates the sequence number of the current graph
         ax1 = plt.subplot(221)
@@ -584,7 +586,7 @@ class BackTestSMA(Toplevel):
                         xytext=(mdates.datestr2num(buys['PurchaseDate'][i]) + 1, buys['CurrentVal'][i]), 
                         textcoords='data', arrowprops=dict(arrowstyle='-|>'),
                         horizontalalignment="left", bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
-                        fontsize='small')
+                        fontsize='xx-small')
         #ax1.set_ylabel("Portfolio Value")
         self.setAxesCommonConfig(ax1, 'Portfolio performance - ' + self.script, 'Portfolio Value')
 

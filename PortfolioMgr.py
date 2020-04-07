@@ -55,6 +55,7 @@ from backtestsma import *
 from getquote import *
 from testdata import *
 from graphresearch import *
+from downloaddata import *
 
 class PortfolioManager:
     def __init__(self):
@@ -89,7 +90,8 @@ class PortfolioManager:
 
         # ******************main program starts******************
         # Set Alpha Vantage key and create timeseriese and time indicator objects
-        self.key = 'XXXX'
+        #self.key = 'XXXX'
+        self.key = 'UV6KQA6735QZKBTV'
         # get your key from https://www.alphavantage.co/support/#api-key
 
         # ts = TimeSeries(key, output_format='json')
@@ -132,6 +134,7 @@ class PortfolioManager:
         # add help menu
         self.help_menu=Menu(self.menu, tearoff=0)
         self.help_menu.add_command(label="Mode (Online/Offline)", command=self.menuSetTestMode)
+        self.help_menu.add_command(label="Download Data", command=self.menuDownloadData)
         self.menu.add_cascade(label='Help', menu=self.help_menu)
 
         # plot variable used to plot 9 standard graphs, enabled via right click menu
@@ -561,7 +564,7 @@ class PortfolioManager:
             self.ax[0].clear()
             #self.ax[0].set_visible(True)
             self.ax[0] = self.f.add_subplot(self.dictgraphmenu[0]['m1'][0], self.dictgraphmenu[0]['m1'][1], self.graphctr, visible=True, label='Daily Close Vs SMA')#, title=script_name, label='Daily close price', xlabel='Date', ylabel='Closing price')
-            self.ax[0].plot(self.dfDaily['4. close'], label='Close', marker='x', markevery=5)
+            self.ax[0].plot(self.dfDaily['4. close'], label='Close', marker='*', markevery=5)
             #self.ax[0].plot(self.dfDaily['4. close'], 'x', markersize=3)
             self.ax[0].plot(self.dfSMA.head(sizeofdaily)['SMA'], label='20 SMA')
             self.ax[0].lines[0].set_pickradius(1)
@@ -786,7 +789,7 @@ class PortfolioManager:
             self.ax[6].plot(self.dfMACD.loc[self.dfMACD.index[:] >= sdateyearback, 'MACD_Signal'], 'r-', label='Signal')
             self.ax[6].plot(self.dfMACD.loc[self.dfMACD.index[:] >= sdateyearback, 'MACD'], 'y-', label='MACD')
             self.ax[6].plot(self.dfMACD.loc[self.dfMACD.index[:] >= sdateyearback, 'MACD_Hist'], 'b-', label='History')
-            self.setAxesCommonConfig(6, 'm7', script_name, 'Moving Avg conv')
+            self.setAxesCommonConfig(6, 'm7', script_name, 'MACD')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
             msgbx.showerror("Error", "Error in MACD: "+ str(e))
@@ -983,6 +986,9 @@ class PortfolioManager:
         plt.legend(loc='upper left')
         plt.grid()
         plt.show()
+
+    def menuDownloadData(self):
+        obj1 = classDownloadData(argKey=self.key)
 
     def menuSetTestMode(self):
         if (self.bool_test):
