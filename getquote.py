@@ -263,15 +263,14 @@ class classGetQuote(Toplevel):
             if((dnewscript != None) and (len(dnewscript['Symbol']) >0)):
                 stock_name = dnewscript['Symbol']
                 listnewscript = list(dnewscript.items())
-                self.output_tree.get_stock_quote("", stock_name, listnewscript[1][0] + '=' +listnewscript[1][1],
+                #argHoldingIID="", argStockName=stock_name, argPriceDf=DataFrame()
+                self.output_tree.get_stock_quote("", stock_name, DataFrame(), listnewscript[1][0] + '=' +listnewscript[1][1],
                                                 listnewscript[2][0] + '=' + listnewscript[2][1],
                                                 listnewscript[3][0] + '=' + listnewscript[3][1],
                                                 listnewscript[4][0] + '=' + listnewscript[4][1],
                                                 listnewscript[5][0] + '=' + listnewscript[5][1])
                 #dnewscript['Price'], dnewscript['Date'], 
                 #   dnewscript['Quantity'], dnewscript['Commission'], dnewscript['Cost'])
-            else:
-                msgbx.showerror("Add Script", "Error: Values not provided")
         else:
             msgbx.showerror('Get Quote', 'No script selected')
             #self.focus_force()

@@ -2,6 +2,8 @@
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox as msgbx
+from tkcalendar import Calendar, DateEntry
+
 from datetime import date
 import matplotlib
 from matplotlib.pyplot import Figure
@@ -29,6 +31,13 @@ class classAllGraphs(Toplevel):
         self.bool_menucalled = argmenucalled
         self.graphid = arggraphid
         self.output_tree = argoutputtree
+
+        try:
+            self.fromdt = date.today()
+            self.fromdt = self.fromdt.replace(year=self.fromdt.year-1)
+        except ValueError:
+            dself.fromdt = self.fromdt.replace(year=self.fromdt.year-1, day=self.fromdt.day-1)
+
 
         self.f = Figure(figsize=(12.63,8), dpi=100, facecolor='w', edgecolor='k', tight_layout=True, linewidth=0.5)
         self.output_canvas=FigureCanvasTkAgg(self.f, master=self)
@@ -61,9 +70,15 @@ class classAllGraphs(Toplevel):
         self.graph_select_combo.current(0)
         self.graph_select_combo.bind('<<ComboboxSelected>>', self.OnGraphSelectionChanged)
 
-        self.btn_show_selected_graph = ttk.Button(self.frame1, text="Show Selected Graphs", command=self.btnShowSelectedGraph)
-        self.btn_clear_selected_graph = ttk.Button(self.frame1, text="Clear Selected Graphs", command=self.btnClearSelectedGraph)
-        self.btn_clear_all_graph = ttk.Button(self.frame1, text="Clear All graphs", command=self.btnClearAllGraph)
+        self.from_date_text = StringVar()
+        self.from_date = DateEntry(master=self.frame1, width=12, year=self.fromdt.year, 
+                                month=self.fromdt.month, day=self.fromdt.day, 
+                                background='darkblue', foreground='white', borderwidth=2,
+                                textvariable=self.from_date_text, date_pattern='y-m-d')
+
+        self.btn_show_selected_graph = ttk.Button(self.frame1, text="Show Selected", command=self.btnShowSelectedGraph)
+        self.btn_clear_selected_graph = ttk.Button(self.frame1, text="Clear Selected", command=self.btnClearSelectedGraph)
+        self.btn_clear_all_graph = ttk.Button(self.frame1, text="Clear All", command=self.btnClearAllGraph)
         self.btn_cancel = ttk.Button(self.frame1, text="Close", command=self.OnClose)
 
         self.notebook = ttk.Notebook(self)
@@ -308,10 +323,11 @@ class classAllGraphs(Toplevel):
         self.btn_add_script.grid_configure(row=0, column=3, padx=5, pady=5)
         self.graph_select_label.grid_configure(row=0, column=4, sticky=(E))
         self.graph_select_combo.grid_configure(row=0, column=5, sticky=(W))
-        self.btn_show_selected_graph.grid_configure(row=0, column=6, padx=5, pady=5)
-        self.btn_clear_selected_graph.grid_configure(row=0, column=7, padx=5, pady=5)
-        self.btn_clear_all_graph.grid_configure(row=0, column=8, padx=5, pady=5)
-        self.btn_cancel.grid_configure(row=0, column=9, padx=5, pady=5)
+        self.from_date.grid_configure(row=0, column=6, sticky=(W))
+        self.btn_show_selected_graph.grid_configure(row=0, column=7, padx=5, pady=5)
+        self.btn_clear_selected_graph.grid_configure(row=0, column=8, padx=5, pady=5)
+        self.btn_clear_all_graph.grid_configure(row=0, column=9, padx=5, pady=5)
+        self.btn_cancel.grid_configure(row=0, column=10, padx=5, pady=5)
 
         self.notebook.grid_configure(row=1, column=0, sticky=(N, E, S, W), padx=5, pady=5) 
         #self.fDailyPrice.grid_configure(row=0, column=1)
@@ -516,15 +532,13 @@ class classAllGraphs(Toplevel):
             if((dnewscript != None) and (len(dnewscript['Symbol']) >0)):
                 stock_name = dnewscript['Symbol']
                 listnewscript = list(dnewscript.items())
-                self.output_tree.get_stock_quote("", stock_name, listnewscript[1][0] + '=' +listnewscript[1][1],
+                self.output_tree.get_stock_quote("", stock_name, DataFrame(), listnewscript[1][0] + '=' +listnewscript[1][1],
                                                 listnewscript[2][0] + '=' + listnewscript[2][1],
                                                 listnewscript[3][0] + '=' + listnewscript[3][1],
                                                 listnewscript[4][0] + '=' + listnewscript[4][1],
                                                 listnewscript[5][0] + '=' + listnewscript[5][1])
                 #dnewscript['Price'], dnewscript['Date'], 
                 #   dnewscript['Quantity'], dnewscript['Commission'], dnewscript['Cost'])
-            else:
-                msgbx.showerror("Add Script", "Error: Values not provided")
         else:
             msgbx.showerror('Get Quote', 'No script selected')
             #self.focus_force()
@@ -571,6 +585,7 @@ class classAllGraphs(Toplevel):
                     dfdata, dfmetadata = ts.get_daily(symbol=self.script,
                                             outputsize=strsize)
 
+                dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
                 #self.l1, = self.ax.plot(dfdata['4. close'], label='Close', gid=argCurrGraph)
                 self.ax.plot(dfdata['4. close'], label='Close', gid=argCurrGraph)
             elif(argCurrGraph == 1): #intra
@@ -581,6 +596,7 @@ class classAllGraphs(Toplevel):
                                                 interval=self.interval_combo_text2.get(), 
                                                 outputsize=self.outpusize_combo_text2.get())
                 #self.l2, = self.ax.plot(dfdata['4. close'], label='Intra-day', gid=argCurrGraph)
+                dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
                 self.ax.plot(dfdata['4. close'], label='Intra-day', gid=argCurrGraph)
             elif(argCurrGraph == 2): #SMA
                 if(self.bool_test):
@@ -591,6 +607,7 @@ class classAllGraphs(Toplevel):
                                             time_period=int(self.time_period_text3.get()), 
                                             series_type=self.series_type_combo_text3.get())
                 #self.l3, = self.ax.plot(dfdata['SMA'], label='SMA', gid=argCurrGraph)
+                dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
                 self.ax.plot(dfdata['SMA'], label='SMA', gid=argCurrGraph)
             elif(argCurrGraph == 3): #VWAP
                 if(self.bool_test):
@@ -598,6 +615,7 @@ class classAllGraphs(Toplevel):
                 else:
                     dfdata, dfmetadata = ti.get_vwap(symbol=self.script, 
                                             interval=self.interval_combo_text4.get())
+                dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
                 self.ax.plot(dfdata['VWAP'], label='VWAP', gid=argCurrGraph)
             elif(argCurrGraph == 4): #RSI
                 if(self.bool_test):
@@ -607,6 +625,7 @@ class classAllGraphs(Toplevel):
                                             interval=self.interval_combo_text5.get(), 
                                             time_period=int(self.time_period_text5.get()),
                                             series_type=self.series_type_combo_text5.get())
+                dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
                 self.ax.plot(dfdata['RSI'], label='RSI', gid=argCurrGraph)
             elif(argCurrGraph == 5): #ADX
                 if(self.bool_test):
@@ -615,6 +634,7 @@ class classAllGraphs(Toplevel):
                     dfdata, dfmetadata = ti.get_adx(symbol=self.script, 
                                             interval=self.interval_combo_text6.get(), 
                                             time_period=int(self.time_period_text6.get()))
+                dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
                 self.ax.plot(dfdata['ADX'], label='ADX', gid=argCurrGraph)
             elif(argCurrGraph == 6): #STOCH
                 if(self.bool_test):
@@ -627,6 +647,7 @@ class classAllGraphs(Toplevel):
                                             slowdperiod=int(self.slowdperiod_text7.get()), 
                                             slowkmatype=int(self.slowkmatype_combo_text7.get()), 
                                             slowdmatype=self.slowdmatype_combo_text7.get())
+                dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
                 self.ax.plot(dfdata['SlowK'], label='SlowK Mov Avg', gid=argCurrGraph)
                 self.ax.plot(dfdata['SlowD'], label='SlowD Mov Avg', gid=argCurrGraph)
             elif(argCurrGraph == 7): #MACD
@@ -639,6 +660,7 @@ class classAllGraphs(Toplevel):
                                             fastperiod=int(self.fastperiod_text8.get()), 
                                             slowperiod=int(self.slowperiod_text8.get()), 
                                             signalperiod=int(self.signalperiod_text8.get()))
+                dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
                 self.ax.plot(dfdata['MACD_Signal'], label='MACD Signal', gid=argCurrGraph)
                 self.ax.plot(dfdata['MACD'], label='MACD', gid=argCurrGraph)
                 self.ax.plot(dfdata['MACD_Hist'], label='MACD History', gid=argCurrGraph)
@@ -650,6 +672,7 @@ class classAllGraphs(Toplevel):
                                             interval=self.interval_combo_text9.get(), 
                                             time_period=int(self.time_period_text9.get()), 
                                             series_type=self.series_type_combo_text9.get())
+                dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
                 self.ax.plot(dfdata['Aroon Up'], label='Aroon Up', gid=argCurrGraph)
                 self.ax.plot(dfdata['Aroon Down'], label='Aroon Down', gid=argCurrGraph)
             elif(argCurrGraph == 9): #BBANDS
@@ -663,6 +686,7 @@ class classAllGraphs(Toplevel):
                                             nbdevup=int(self.nbdevup_text10.get()), 
                                             nbdevdn=int(self.nbdevdn_text10.get()), 
                                             matype=self.matype_combo_text10.get())
+                dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
                 self.ax.plot(dfdata['Real Upper Band'], label='Real Upper Band', gid=argCurrGraph)
                 self.ax.plot(dfdata['Real Middle Band'], label='Real Middle Band', gid=argCurrGraph)
                 self.ax.plot(dfdata['Real Lower Band'], label='Real Lower Band', gid=argCurrGraph)
@@ -675,11 +699,12 @@ class classAllGraphs(Toplevel):
                                             outputsize=strsize)
 
                 #self.l1, = self.ax.plot(dfdata['4. close'], label='Close', gid=argCurrGraph)
+                dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
                 self.plotMarketDataCandleSticks(dfdata, argCurrGraph) 
 
             self.ax.grid(True)
             #self.ax[0].set_title(argTitle, size='xx-small')
-            self.ax.legend(fontsize='xx-small')
+            self.ax.legend(fontsize='small')
             self.output_canvas.draw()
             self.toolbar.update()
 
@@ -726,7 +751,7 @@ class classAllGraphs(Toplevel):
         #for c in self.ax.lines:
         #    self.ax.draw_artist(c)
         self.ax.grid(True)
-        self.ax.legend(fontsize='xx-small')
+        self.ax.legend(fontsize='small')
         self.output_canvas.draw()
         self.toolbar.update()
 
@@ -744,7 +769,7 @@ class classAllGraphs(Toplevel):
         self.ax.relim()
         self.ax.autoscale_view()
         self.ax.grid(True)
-        self.ax.legend(fontsize='xx-small')
+        self.ax.legend(fontsize='small')
         self.output_canvas.draw()
         self.toolbar.update()
 
