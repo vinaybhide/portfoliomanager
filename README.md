@@ -6,6 +6,7 @@ Pre-requisites for development:
     pip install alpha_vantage
     pip install pandas
     pip install matplotlib
+    pip install tkcalendar
 4. In addition I have used tkinter module for graphics
 
 Program using alpha vantage to manage stock portfolio

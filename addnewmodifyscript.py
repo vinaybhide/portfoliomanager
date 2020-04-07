@@ -9,6 +9,7 @@ from tkinter import ttk
 from tkinter import messagebox as msgbx
 from datetime import date
 from alpha_vantage.timeseries import TimeSeries
+from tkcalendar import Calendar, DateEntry
 
 class classAddNewModifyScript(Toplevel):
     def __init__(self, master=None, argisadd=True, argscript="", 
@@ -44,7 +45,11 @@ class classAddNewModifyScript(Toplevel):
         # Now create purchase date entry
         self.purchasedate_label = ttk.Label(self.frame1, text='Enter date of purchase: ')
         self.purchasedate_text = StringVar(value=argPurchaseDate)
-        self.purchasedate_entry = ttk.Entry(self.frame1, text='yyyy-mm-dd', textvariable=self.purchasedate_text, width=10)
+        #self.purchasedate_entry = ttk.Entry(self.frame1, text='yyyy-mm-dd', textvariable=self.purchasedate_text, width=10)
+        self.purchasedate_entry = DateEntry(master=self.frame1, width=12, year=date.today().year, 
+                                month=date.today().month, day=date.today().day, 
+                                background='darkblue', foreground='white', borderwidth=2,
+                                textvariable=self.purchasedate_text, date_pattern='y-m-d')
 
         # Now create quantity label and text box to allow user to enter stock quantity
         self.quantity_label = ttk.Label(self.frame1, text='Enter quantity purchased: ')

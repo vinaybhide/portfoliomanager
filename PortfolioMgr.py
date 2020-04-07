@@ -140,6 +140,9 @@ class PortfolioManager:
         self.toolbar_frame=Frame(master=self.root)
         self.toolbar = NavigationToolbar2Tk(self.output_canvas, self.toolbar_frame)
 
+        self.xmouseposition = None
+        self.ymouseposition = None
+
         self.output_tree = ScriptTreeView(self.content, self.ts, self.ti, self.f, self.bool_test, self.output_canvas, self.toolbar, selectmode='browse')
         #self.output_tree.bind('<<TreeviewSelect>>', self.TreeViewSelectionChanged)
 
@@ -204,6 +207,7 @@ class PortfolioManager:
 
         # handles returned by the mouse move and mouse click event on plot areas
         self.cid_leftclick = None
+        self.cid_leftrelease = None
         self.cid_mouse_move = None
 
         self.root.columnconfigure(0, weight=1)
@@ -233,6 +237,7 @@ class PortfolioManager:
         if((dnewscript != None) and (len(dnewscript['Symbol']) >0)):
             stock_name = dnewscript['Symbol']
             listnewscript = list(dnewscript.items())
+            #argHoldingIID="", argStockName=stock_name, argPriceDf=DataFrame()
             self.output_tree.get_stock_quote("", stock_name, DataFrame(), listnewscript[1][0] + '=' +listnewscript[1][1],
                                             listnewscript[2][0] + '=' + listnewscript[2][1],
                                             listnewscript[3][0] + '=' + listnewscript[3][1],
@@ -241,8 +246,6 @@ class PortfolioManager:
             #dnewscript['Price'], dnewscript['Date'], 
             #   dnewscript['Quantity'], dnewscript['Commission'], dnewscript['Cost'])
 
-        else:
-            msgbx.showerror("Add Script", "Error: values not provided")
 
     """ menuDeleteSelectedScriptFromPortfolio """
     def menuDeleteSelectedScriptFromPortfolio(self):
@@ -295,8 +298,6 @@ class PortfolioManager:
                                             listnewscript[3][0] + '=' + listnewscript[3][1],
                                             listnewscript[4][0] + '=' + listnewscript[4][1],
                                             listnewscript[5][0] + '=' + listnewscript[5][1])
-        else:
-            msgbx.showerror("Modify Script", "Error: Please provide value for all fields")
 
     """ Method - menuDeleteSelectedScript
         Deletes selection. If parent script is selected everything is deleted
@@ -491,11 +492,17 @@ class PortfolioManager:
     def mouseClickMoveEnableDisable(self, argbFlag):
         if(argbFlag == True):
             self.cid_leftclick = self.output_canvas.callbacks.connect('button_press_event', self.on_click_graphs)
+            self.cid_leftrelease = self.output_canvas.callbacks.connect('button_release_event', self.on_release_graphs)
             self.cid_mouse_move = self.output_canvas.callbacks.connect('motion_notify_event', self.on_mouse_move)
         else:
             if(self.cid_leftclick != None):
                 self.output_canvas.callbacks.disconnect(self.cid_leftclick)
             self.cid_leftclick = None
+            if(self.cid_leftrelease != None):
+                self.output_canvas.callbacks.disconnect(self.cid_leftrelease)
+            self.cid_leftrelease = None
+            self.xmouseposition = None
+            self.ymouseposition = None
             if(self.cid_mouse_move != None):
                 self.output_canvas.callbacks.disconnect(self.cid_mouse_move)
             self.cid_mouse_move = None
@@ -554,9 +561,11 @@ class PortfolioManager:
             self.ax[0].clear()
             #self.ax[0].set_visible(True)
             self.ax[0] = self.f.add_subplot(self.dictgraphmenu[0]['m1'][0], self.dictgraphmenu[0]['m1'][1], self.graphctr, visible=True, label='Daily Close Vs SMA')#, title=script_name, label='Daily close price', xlabel='Date', ylabel='Closing price')
-            self.ax[0].plot(self.dfDaily['4. close'], label='Close')
-            self.ax[0].plot(self.dfDaily['4. close'], 'x', markersize=3)
+            self.ax[0].plot(self.dfDaily['4. close'], label='Close', marker='x', markevery=5)
+            #self.ax[0].plot(self.dfDaily['4. close'], 'x', markersize=3)
             self.ax[0].plot(self.dfSMA.head(sizeofdaily)['SMA'], label='20 SMA')
+            self.ax[0].lines[0].set_pickradius(1)
+            self.ax[0].lines[1].set_pickradius(2)
 
             #commenting annotations
             """for eachrow in listpurchasprice:
@@ -997,6 +1006,8 @@ class PortfolioManager:
         try:
             openfilehandle=askopenfile('r', initialdir = "/", title = "Open portfolio file to load portfolio",filetypes = (("csv files","*.csv"),("all files","*.*")) )
             if openfilehandle is not None:
+                self.root.configure(cursor='wait')
+                self.root.update()
                 list_scripts=openfilehandle.readlines()
                 openfilehandle.close()
                 self.resetExisting()
@@ -1020,9 +1031,12 @@ class PortfolioManager:
                         self.output_tree.get_stock_quote("", str(arg_list[0]), dfstockname, str(arg_list[1]), str(arg_list[2]),
                         str(arg_list[3]), str(arg_list[4]), str(arg_list[5]))    
                     else:
+                        self.root.configure(cursor='')
                         msgbx.showerror("Open portfolio", "Error->Input file not in correct format." +"\n" + "Each line must be in the format of ScriptName,PurchasePrice,PurchaseDate")
                         return
+                self.root.configure(cursor='')
         except Exception as e:
+            self.root.configure(cursor='')
             msgbx.showerror('Error', 'Error while opening file: ' + str(e))
 
     """ method menuSavePortfolio       
@@ -1053,30 +1067,37 @@ class PortfolioManager:
 
     def on_click_graphs(self, event):
         if event.inaxes is not None:
-            #msgbx.showinfo('If', 'xdata='+str(event.xdata) + '   ydata= ' + str(event.ydata))
-            graphid = -1
-            if(event.inaxes == self.ax[0]):
-                graphid = 0 #Daily
-            elif (event.inaxes == self.ax[1]):
-                graphid = 1 #intra
-            elif (event.inaxes == self.ax[2]):
-                graphid = 3 #VWAP
-            elif (event.inaxes == self.ax[3]):
-                graphid = 4 #RSI
-            elif (event.inaxes == self.ax[4]):
-                graphid = 5 #ADX
-            elif (event.inaxes == self.ax[5]):
-                graphid = 6 #STOCH
-            elif (event.inaxes == self.ax[6]):
-                graphid = 7 #MACD
-            elif (event.inaxes == self.ax[7]):
-                graphid = 8 #AROON
-            elif (event.inaxes == self.ax[8]):
-                graphid = 9 #BBANDS
-            obj = classAllGraphs(master=self.content, argistestmode=self.bool_test, argkey=self.key,
-                        argscript=self.currentScript, argmenucalled=False, arggraphid=graphid,
-                        argoutputtree=self.output_tree)
-            obj.InitializeWindow()
+            self.xmouseposition = event.x
+            self.ymouseposition = event.y
+            return
+
+    def on_release_graphs(self, event):
+        if event.inaxes is not None:
+            if( (self.xmouseposition == event.x) and (self.ymouseposition == event.y)):
+                #msgbx.showinfo('If', 'xdata='+str(event.xdata) + '   ydata= ' + str(event.ydata))
+                graphid = -1
+                if(event.inaxes == self.ax[0]):
+                    graphid = 0 #Daily
+                elif (event.inaxes == self.ax[1]):
+                    graphid = 1 #intra
+                elif (event.inaxes == self.ax[2]):
+                    graphid = 3 #VWAP
+                elif (event.inaxes == self.ax[3]):
+                    graphid = 4 #RSI
+                elif (event.inaxes == self.ax[4]):
+                    graphid = 5 #ADX
+                elif (event.inaxes == self.ax[5]):
+                    graphid = 6 #STOCH
+                elif (event.inaxes == self.ax[6]):
+                    graphid = 7 #MACD
+                elif (event.inaxes == self.ax[7]):
+                    graphid = 8 #AROON
+                elif (event.inaxes == self.ax[8]):
+                    graphid = 9 #BBANDS
+                obj = classAllGraphs(master=self.content, argistestmode=self.bool_test, argkey=self.key,
+                            argscript=self.currentScript, argmenucalled=False, arggraphid=graphid,
+                            argoutputtree=self.output_tree)
+                obj.InitializeWindow()
 
     def isPointOnGraphLine(self, argXData, argYData, argDF, argColName):
         #found = csvdf[csvdf['4. close'].astype('str').str.contains('1623.6')]
@@ -1096,22 +1117,36 @@ class PortfolioManager:
     def on_mouse_move(self, event):
         if event.inaxes is not None:
             #msgbx.showinfo('If', 'xdata='+str(event.xdata) + '   ydata= ' + str(event.ydata))
-            if(event.inaxes == self.ax[0]):
-
-                if(self.annotate_state[0] != None):
-                    self.annotate_state[0].set_visible(False)
-                self.annotate_state[0] = self.ax[0].annotate('{:.2f}'.format(event.ydata), 
-                        xy=(event.xdata, event.ydata), xycoords='data', 
-                        xytext=(event.xdata + 1, event.ydata), textcoords='data',
-                        horizontalalignment="left", arrowprops=dict(arrowstyle="simple", 
-                        connectionstyle="arc3,rad=-0.2"),
-                        bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
-                        fontsize='xx-small')
-                self.annotate_state[0].set_visible(True)
-                self.output_canvas.draw()
+            for i in range(len(self.ax)):
+                if(self.annotate_state[i] != None):
+                    self.annotate_state[i].set_visible(False)
+            
+                if(event.inaxes == self.ax[i]):
+                    #line1_data = self.ax[0].lines[0].get_xydata()
+                    #line2_data = self.ax[0].lines[1].get_xydata()
+                    #a = [float('{:.0f}'.format(event.xdata)), float('{:.4f}'.format(event.ydata))]
+                    #if( (a in line1_data) or (a in line2_data)):
+                    bline1 = False
+                    for j in range(len(self.ax[i].lines)):
+                        bline1, indarray = self.ax[i].lines[j].contains(event)
+                        if(bline1):
+                            break
+                    if(bline1):
+                        self.annotate_state[i] = self.ax[i].annotate('{:.2f}'.format(event.ydata), 
+                                xy=(event.xdata, event.ydata), xycoords='data', 
+                                xytext=(event.xdata, event.ydata), textcoords='data',
+                                horizontalalignment="left", arrowprops=dict(arrowstyle="simple", 
+                                connectionstyle="arc3,rad=-0.2"),
+                                bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
+                                fontsize='xx-small')
+                        self.annotate_state[i].set_visible(True)
+                        break
+            
+            self.f.set_tight_layout(True)
+            self.output_canvas.draw()
 
                 #if( self.ax[0].contains(event)[0] == True):
-                """if( self.isPointOnGraphLine(event.xdata, event.ydata, self.dfDaily, '4. close')):
+            """if( self.isPointOnGraphLine(event.xdata, event.ydata, self.dfDaily, '4. close')):
                     if(self.annotate_state[0] != None):
                         self.annotate_state[0].set_visible(False)
                     self.annotate_state[0] = self.ax[0].annotate("Price: " + str(event.ydata), xy=(event.xdata, event.ydata),
