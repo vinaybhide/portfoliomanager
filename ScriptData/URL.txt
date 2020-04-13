@@ -10,3 +10,6 @@ https://www.alphavantage.co/query?function=MACD&symbol=HDFC.BSE&interval=daily&s
 https://www.alphavantage.co/query?function=AROON&symbol=HDFC.BSE&interval=daily&time_period=20&apikey=XXXX&datatype=csv
 https://www.alphavantage.co/query?function=BBANDS&symbol=HDFC.BSE&interval=daily&time_period=20&series_type=close&nbdevup=2&nbdevdn=2&apikey=XXXX&datatype=csv
 https://www.alphavantage.co/query?function=ADX&symbol=HDFC.BSE&interval=daily&time_period=20&apikey=XXXX&datatype=csv
+
+http://portal.amfiindia.com/DownloadNAVHistoryReport_Po.aspx?frmdt=01-Apr-2020
+http://portal.amfiindia.com/DownloadNAVHistoryReport_Po.aspx?mf=27&frmdt=01-Apr-2020&todt=11-Apr-2020
