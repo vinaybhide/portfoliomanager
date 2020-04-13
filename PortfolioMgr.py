@@ -1,3 +1,4 @@
+#v1.0
 #v0.9 - All research graph via menu & mouse click
 #v0.8 - Candlestick graphs
 #v0.7 - Base version with all graphs and bug fixes, added code to github desktop
@@ -87,7 +88,8 @@ class PortfolioManager:
         self.dfBBANDS = DataFrame()
         self.dfADX = DataFrame()
 
-
+        self.event = None
+        self.annotate_visible = False
         # ******************main program starts******************
         # Set Alpha Vantage key and create timeseriese and time indicator objects
         #self.key = 'XXXX'
@@ -105,37 +107,39 @@ class PortfolioManager:
         self.content = ttk.Frame(self.root, padding=(5, 5, 12, 0))
         self.content.grid(column=0, row=0, sticky=(N, S, E, W))
 
+        self.root.wm_protocol("WM_DELETE_WINDOW", self.OnClose)
+
         # add main menu object
         self.menu= Menu(master=self.root)
         self.root.config(menu=self.menu)
         # add file menu
         self.file_menu=Menu(self.menu, tearoff=0)
-        self.file_menu.add_command(label="Open Portfolio", command=self.menuOpenPortfolio)
-        self.file_menu.add_command(label="Save Portfolio", command=self.menuSavePortfolio)
+        self.file_menu.add_command(label="Open Portfolio", underline = 0, command=self.menuOpenPortfolio)
+        self.file_menu.add_command(label="Save Portfolio", underline = 0, command=self.menuSavePortfolio)
         self.file_menu.add_separator()
-        self.file_menu.add_command(label="Exit", command=self.root.destroy)
-        self.menu.add_cascade(label='File', menu=self.file_menu)
+        self.file_menu.add_command(label="Exit", underline = 1, command=self.OnClose)
+        self.menu.add_cascade(label='File', underline = 0, menu=self.file_menu)
 
         # add manage script menu
         self.script_menu=Menu(self.menu, tearoff=0)
-        self.script_menu.add_command(label="Add New Script", command=self.menuAddScript)
-        self.script_menu.add_command(label="Delete Selected Script from Portfolio", command=self.menuDeleteSelectedScriptFromPortfolio)
+        self.script_menu.add_command(label="Add New Script", underline = 0, command=self.menuAddScript)
+        self.script_menu.add_command(label="Delete Selected Script from Portfolio", underline = 0, command=self.menuDeleteSelectedScriptFromPortfolio)
         self.script_menu.add_separator()
-        self.script_menu.add_command(label="Get Quote", command=self.menuGetStockQuote)
+        self.script_menu.add_command(label="Get Quote", underline = 0, command=self.menuGetStockQuote)
         self.script_menu.add_separator()
-        self.script_menu.add_command(label="Refresh Selected Script with Market Price", command=self.menuRefreshScriptData)
-        self.menu.add_cascade(label='Manage Portfolio', menu=self.script_menu)
+        self.script_menu.add_command(label="Refresh Selected Script with Market Price", underline = 0, command=self.menuRefreshScriptData)
+        self.menu.add_cascade(label='Manage Portfolio', underline = 0, menu=self.script_menu)
 
         # research script menu
         self.research_menu=Menu(self.menu, tearoff=0)
-        self.research_menu.add_command(label="Graphs", command=self.menuResearchGraphs)
-        self.menu.add_cascade(label='Research', menu=self.research_menu)
+        self.research_menu.add_command(label="Graphs", underline = 0, command=self.menuResearchGraphs)
+        self.menu.add_cascade(label='Research', underline = 0, menu=self.research_menu)
 
         # add help menu
         self.help_menu=Menu(self.menu, tearoff=0)
-        self.help_menu.add_command(label="Mode (Online/Offline)", command=self.menuSetTestMode)
-        self.help_menu.add_command(label="Download Data", command=self.menuDownloadData)
-        self.menu.add_cascade(label='Help', menu=self.help_menu)
+        self.help_menu.add_command(label="Mode (Online/Offline)", underline = 0, command=self.menuSetTestMode)
+        self.help_menu.add_command(label="Download Data", underline = 0, command=self.menuDownloadData)
+        self.menu.add_cascade(label='Help', underline = 0, menu=self.help_menu)
 
         # plot variable used to plot 9 standard graphs, enabled via right click menu
         self.f = Figure(figsize=(15,7), dpi=100, facecolor='w', edgecolor='k', tight_layout=True, linewidth=0.5)
@@ -150,10 +154,18 @@ class PortfolioManager:
         #self.output_tree.bind('<<TreeviewSelect>>', self.TreeViewSelectionChanged)
 
         self.popup_menu_righclick = Menu(self.menu, tearoff=0)
-        self.popup_menu_righclick.add_command(label="Delete", command=self.menuDeleteSelectedScript)
-        self.popup_menu_righclick.add_command(label="Modify", command=self.menuModifySelectedScript)
+        self.popup_menu_righclick.add_command(label="Delete", underline = 0, command=self.menuDeleteSelectedScript)
+        self.popup_menu_righclick.add_command(label="Modify", underline = 0, command=self.menuModifySelectedScript)
         self.popup_menu_righclick.add_separator()
-        self.popup_menu_righclick.add_command(label="Portfolio Performance(Popup)", command=self.menuShowScriptPerformanceGraph)
+        
+        self.popup_menu_rightclick_performance = Menu(self.popup_menu_righclick, tearoff=0)
+        self.popup_menu_rightclick_performance.add_command(label="Script-Show All", underline = 12, command=self.menuShowScriptPerformanceAllGraphs)
+        self.popup_menu_rightclick_performance.add_command(label="Script-Show Performance", underline = 12, command=self.menuShowScriptPerformance)
+        self.popup_menu_rightclick_performance.add_command(label="Script-Show Candle stick OHLC", underline = 12, command=self.menuShowScriptCandlestick)
+        self.popup_menu_rightclick_performance.add_command(label="Script-Show Buy & Sell prediction", underline = 12, command=self.menuShowScriptBuySell)
+        self.popup_menu_rightclick_performance.add_command(label="Script-Show Returns", underline = 12, command=self.menuShowScriptReturns)
+        self.popup_menu_righclick.add_cascade(label='Script Performance Graphs', menu=self.popup_menu_rightclick_performance, underline=0)
+
         self.popup_menu_righclick.add_separator()
 
         self.POSrightclickmenuDailyVsSMA = BooleanVar(False)
@@ -192,6 +204,10 @@ class PortfolioManager:
         self.popup_menu_righclick.add_checkbutton(label="Bollinger Bands", onvalue=True, offvalue=False, variable=self.POSrightclickmenuBBands, command=self.rightclickmenuBBands)
         #self.POSrightclickmenuBBands=13
 
+        self.popup_ongraph = Menu(self.menu, tearoff=0)
+        self.popup_ongraph.add_command(label="Detail Graph", command=self.OnDetailGraph)
+        self.popup_ongraph.add_command(label="Analysis", command=self.OnAnalysis)        
+
         self.output_tree.bind('<Button-3>', self.OnRightClick)
 
         self.output_tree.grid(row=0, column=0, rowspan=1, columnspan=11, sticky=(N,E, W, S))
@@ -219,6 +235,9 @@ class PortfolioManager:
 
         mainloop()
 
+    def OnClose(self):
+        self.root.destroy()
+
     def resetExisting(self):
         #global output_counter
         # delete existing tree items
@@ -235,7 +254,7 @@ class PortfolioManager:
         Adds a new script to the tree view """
     def menuAddScript(self):
         dnewscript = dict()
-        dnewscript = classAddNewModifyScript(master=self.content, argkey=self.key).show()
+        dnewscript = classAddNewModifyScript(master=self.root, argkey=self.key).show()
         # returns dictionary - {'Symbol': 'LT.BSE', 'Price': '1000', 'Date': '2020-02-22', 'Quantity': '10', 'Commission': '1', 'Cost': '10001.0'}
         if((dnewscript != None) and (len(dnewscript['Symbol']) >0)):
             stock_name = dnewscript['Symbol']
@@ -290,7 +309,7 @@ class PortfolioManager:
         row_val = self.output_tree.item(rowid, 'values')
         
         dmodifyscript = dict()
-        dmodifyscript = classAddNewModifyScript(master=self.content, argisadd=False, argscript=script_name, 
+        dmodifyscript = classAddNewModifyScript(master=self.root, argisadd=False, argscript=script_name, 
             argPurchasePrice=row_val[0], argPurchaseDate=row_val[1], argPurchaseQty=row_val[2], argCommissionPaid=row_val[3], argCostofInvestment=row_val[4]).show()
         # returns dictionary - {'Symbol': 'LT.BSE', 'Price': '1000', 'Date': '2020-02-22', 'Quantity': '10', 'Commission': '1', 'Cost': '10001.0'}
         if((dmodifyscript != None) and (len(dmodifyscript['Symbol']) >0)):
@@ -318,28 +337,90 @@ class PortfolioManager:
                 msgbx.showerror('Delete Error', "Selected entry could not be deleted due to error:-" + str(e))
                 return
 
-    """ menuShowScriptPerformanceGraph - called on right click menu selection """
-    def menuShowScriptPerformanceGraph(self):
+    """ called on right click menu selection """
+    def menuShowScriptPerformanceAllGraphs(self):
         script_name = self.output_tree.get_parent_item()
         if(len(script_name) <=0):
             msgbx.showwarning("Warning", "Please select valid row")
             return
         # Now get the purchase price if available
-        holdinvalobj = BackTestSMA(argkey=self.key, argscript=script_name, argscripttree=self.output_tree, argavgsmall=10, 
-            argavglarge=20, argIsTest=self.bool_test)
-        holdinvalobj.findScriptPerformance()
+        holdinvalobj = BackTestSMA(master=self.root, argkey=self.key, argscript=script_name, 
+                argscripttree=self.output_tree, argavgsmall=10, argavglarge=20, arglookbackyears=1,
+                argIsTest=self.bool_test)
+        holdinvalobj.findScriptPerformance(argShowPerformance=True, argShowCandlestick=True, 
+                            argShowMarketData=True, argShowReturns=True)
+        holdinvalobj.show()
+        return
+
+    """ called on right click menu selection """
+    def menuShowScriptPerformance(self):
+        script_name = self.output_tree.get_parent_item()
+        if(len(script_name) <=0):
+            msgbx.showwarning("Warning", "Please select valid row")
+            return
+        # Now get the purchase price if available
+        holdinvalobj = BackTestSMA(master=self.root, argkey=self.key, argscript=script_name, 
+                argscripttree=self.output_tree, argavgsmall=10, argavglarge=20, arglookbackyears=1,
+                argIsTest=self.bool_test)
+        holdinvalobj.findScriptPerformance(argShowPerformance=True, argShowCandlestick=False, 
+                            argShowMarketData=False, argShowReturns=False)
+        holdinvalobj.show()
+        return
+
+    """ called on right click menu selection """
+    def menuShowScriptCandlestick(self):
+        script_name = self.output_tree.get_parent_item()
+        if(len(script_name) <=0):
+            msgbx.showwarning("Warning", "Please select valid row")
+            return
+        # Now get the purchase price if available
+        holdinvalobj = BackTestSMA(master=self.root, argkey=self.key, argscript=script_name, 
+                argscripttree=self.output_tree, argavgsmall=10, argavglarge=20, arglookbackyears=1,
+                argIsTest=self.bool_test)
+        holdinvalobj.findScriptPerformance(argShowPerformance=False, argShowCandlestick=True, 
+                            argShowMarketData=False, argShowReturns=False)
+        holdinvalobj.show()
+        return
+
+    """ called on right click menu selection """
+    def menuShowScriptBuySell(self):
+        script_name = self.output_tree.get_parent_item()
+        if(len(script_name) <=0):
+            msgbx.showwarning("Warning", "Please select valid row")
+            return
+        # Now get the purchase price if available
+        holdinvalobj = BackTestSMA(master=self.root, argkey=self.key, argscript=script_name, 
+                argscripttree=self.output_tree, argavgsmall=10, argavglarge=20, arglookbackyears=1,
+                argIsTest=self.bool_test)
+        holdinvalobj.findScriptPerformance(argShowPerformance=False, argShowCandlestick=False, 
+                            argShowMarketData=True, argShowReturns=False)
+        holdinvalobj.show()
+        return
+
+    """ called on right click menu selection """
+    def menuShowScriptReturns(self):
+        script_name = self.output_tree.get_parent_item()
+        if(len(script_name) <=0):
+            msgbx.showwarning("Warning", "Please select valid row")
+            return
+        # Now get the purchase price if available
+        holdinvalobj = BackTestSMA(master=self.root, argkey=self.key, argscript=script_name, 
+                argscripttree=self.output_tree, argavgsmall=10, argavglarge=20, arglookbackyears=1,
+                argIsTest=self.bool_test)
+        holdinvalobj.findScriptPerformance(argShowPerformance=False, argShowCandlestick=False, 
+                            argShowMarketData=False, argShowReturns=True)
         holdinvalobj.show()
         return
 
     def menuResearchGraphs(self):
-        obj = classAllGraphs(master=self.content, argistestmode=self.bool_test, 
+        obj = classAllGraphs(master=self.root, argistestmode=self.bool_test, 
                 argkey=self.key, argscript='', argmenucalled=True, arggraphid=-1, 
                 argoutputtree=self.output_tree)
         obj.InitializeWindow()
 
     # command handler for stock quote button
     def menuGetStockQuote(self):
-        obj = classGetQuote(master=self.content, argoutputtree=self.output_tree, argIsTest=self.bool_test)
+        obj = classGetQuote(master=self.root, argoutputtree=self.output_tree, argIsTest=self.bool_test)
         obj.show()
         return;
 
@@ -532,7 +613,7 @@ class PortfolioManager:
         # aapl_data is a pandas dataframe, aapl_meta_data is a dict
         try:
             if self.bool_test:
-                testobj = PrepareTestData()
+                testobj = PrepareTestData(argOutputSize='compact')
                 self.dfDaily = testobj.loadDaily(script_name)
                 if(self.dfSMA.empty):
                     self.dfSMA = testobj.loadSMA(script_name)
@@ -563,10 +644,10 @@ class PortfolioManager:
             # Visualization
             self.ax[0].clear()
             #self.ax[0].set_visible(True)
-            self.ax[0] = self.f.add_subplot(self.dictgraphmenu[0]['m1'][0], self.dictgraphmenu[0]['m1'][1], self.graphctr, visible=True, label='Daily Close Vs SMA')#, title=script_name, label='Daily close price', xlabel='Date', ylabel='Closing price')
-            self.ax[0].plot(self.dfDaily['4. close'], label='Close', marker='*', markevery=5)
+            self.ax[0] = self.f.add_subplot(self.dictgraphmenu[0]['m1'][0], self.dictgraphmenu[0]['m1'][1], self.graphctr, gid=0, visible=True, label='Daily Close Vs SMA')#, title=script_name, label='Daily close price', xlabel='Date', ylabel='Closing price')
+            self.ax[0].plot(self.dfDaily['4. close'], label='Close', gid=0, marker='*', markersize = 5, markevery=5)
             #self.ax[0].plot(self.dfDaily['4. close'], 'x', markersize=3)
-            self.ax[0].plot(self.dfSMA.head(sizeofdaily)['SMA'], label='20 SMA')
+            self.ax[0].plot(self.dfSMA.head(sizeofdaily)['SMA'], gid=0, label='20 SMA')
             self.ax[0].lines[0].set_pickradius(1)
             self.ax[0].lines[1].set_pickradius(2)
 
@@ -612,8 +693,8 @@ class PortfolioManager:
 
             # Visualization
             self.ax[1].clear()
-            self.ax[1] = self.f.add_subplot(self.dictgraphmenu[1]['m2'][0], self.dictgraphmenu[1]['m2'][1], self.graphctr, visible=True, label='Intra-Day')#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
-            self.ax[1].plot(self.dfIntra['4. close'], label='Intra-day')
+            self.ax[1] = self.f.add_subplot(self.dictgraphmenu[1]['m2'][0], self.dictgraphmenu[1]['m2'][1], self.graphctr, gid=1, visible=True, label='Intra-Day')#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
+            self.ax[1].plot(self.dfIntra['4. close'], gid=1, label='Intra-day', marker='x', markersize=5, markevery=5)
 
             self.setAxesCommonConfig(1, 'm2', script_name, 'Intra-day')
             self.setFigureCommonConfig(script_name)
@@ -643,10 +724,10 @@ class PortfolioManager:
             # Visualization
             self.ax[2].clear()
             #self.ax[2].set_visible(True)
-            self.ax[2] = self.f.add_subplot(self.dictgraphmenu[2]['m3'][0], self.dictgraphmenu[2]['m3'][1], self.graphctr, visible=True, label='VWAP')
+            self.ax[2] = self.f.add_subplot(self.dictgraphmenu[2]['m3'][0], self.dictgraphmenu[2]['m3'][1], self.graphctr, gid=2, visible=True, label='VWAP')
                 #, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
             sdateyearback = self.getPastDateFromToday(self.LookbackYears)
-            self.ax[2].plot(self.dfVWMP.loc[self.dfVWMP.index[:] >= sdateyearback, 'VWAP'], label='VWAP')
+            self.ax[2].plot(self.dfVWMP.loc[self.dfVWMP.index[:] >= sdateyearback, 'VWAP'], gid=2,label='VWAP')
             self.setAxesCommonConfig(2, 'm3', script_name, 'Vol Wt Avg Price')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
@@ -677,12 +758,12 @@ class PortfolioManager:
             self.ax[3].clear()
             #self.ax[3].set_visible(True)
             #color = 'tab:red'
-            self.ax[3] = self.f.add_subplot(self.dictgraphmenu[3]['m4'][0], self.dictgraphmenu[3]['m4'][1], self.graphctr, visible=True, label='RSI')#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
+            self.ax[3] = self.f.add_subplot(self.dictgraphmenu[3]['m4'][0], self.dictgraphmenu[3]['m4'][1], self.graphctr, gid=3, visible=True, label='RSI')#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
             #self.ax[3].tick_params(axis='y', labelcolor=color)
             #twinax = self.ax[3].twinx()
             #color = 'tab:blue'
             sdateyearback = self.getPastDateFromToday(self.LookbackYears)
-            self.ax[3].plot(self.dfRSI.loc[self.dfRSI.index[:] >= sdateyearback, 'RSI'], label='RSI')
+            self.ax[3].plot(self.dfRSI.loc[self.dfRSI.index[:] >= sdateyearback, 'RSI'], gid=3,label='RSI')
             #twinax.tick_params(axis='y', labelcolor=color)
 
             self.setAxesCommonConfig(3, 'm4', script_name, 'RSI')
@@ -715,10 +796,10 @@ class PortfolioManager:
             # Visualization
             self.ax[4].clear()
             #self.ax[4].set_visible(True)
-            self.ax[4] = self.f.add_subplot(self.dictgraphmenu[4]['m5'][0], self.dictgraphmenu[4]['m5'][1], self.graphctr, visible=True, label='ADX')
+            self.ax[4] = self.f.add_subplot(self.dictgraphmenu[4]['m5'][0], self.dictgraphmenu[4]['m5'][1], self.graphctr, gid=4, visible=True, label='ADX')
             #, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
             sdateyearback = self.getPastDateFromToday(self.LookbackYears)
-            self.ax[4].plot(self.dfADX.loc[self.dfADX.index[:] >= sdateyearback, 'ADX'], label='ADX')
+            self.ax[4].plot(self.dfADX.loc[self.dfADX.index[:] >= sdateyearback, 'ADX'], gid=4,label='ADX')
             self.setAxesCommonConfig(4, 'm5', script_name, 'ADX')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
@@ -749,11 +830,11 @@ class PortfolioManager:
             # Visualization
             self.ax[5].clear()
             #self.ax[5].set_visible(True)
-            self.ax[5] = self.f.add_subplot(self.dictgraphmenu[5]['m6'][0], self.dictgraphmenu[5]['m6'][1], self.graphctr, visible=True, label='STOCH')
+            self.ax[5] = self.f.add_subplot(self.dictgraphmenu[5]['m6'][0], self.dictgraphmenu[5]['m6'][1], self.graphctr, gid=5, visible=True, label='STOCH')
             #, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
             sdateyearback = self.getPastDateFromToday(self.LookbackYears)
-            self.ax[5].plot(self.dfStoch.loc[self.dfStoch.index[:] >= sdateyearback, 'SlowK'], 'b-', label='SlowK MA')
-            self.ax[5].plot(self.dfStoch.loc[self.dfStoch.index[:] >= sdateyearback, 'SlowD'], 'r-', label='SlowD MA')
+            self.ax[5].plot(self.dfStoch.loc[self.dfStoch.index[:] >= sdateyearback, 'SlowK'], 'b-', gid=5, label='SlowK MA')
+            self.ax[5].plot(self.dfStoch.loc[self.dfStoch.index[:] >= sdateyearback, 'SlowD'], 'r-', gid=5, label='SlowD MA')
             self.setAxesCommonConfig(5, 'm6', script_name, 'Stoch Oscillator')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
@@ -783,12 +864,12 @@ class PortfolioManager:
             # Visualization
             self.ax[6].clear()
             #self.ax[6].set_visible(True)
-            self.ax[6] = self.f.add_subplot(self.dictgraphmenu[6]['m7'][0], self.dictgraphmenu[6]['m7'][1], self.graphctr, visible=True, label='MACD')
+            self.ax[6] = self.f.add_subplot(self.dictgraphmenu[6]['m7'][0], self.dictgraphmenu[6]['m7'][1], self.graphctr, gid=6, visible=True, label='MACD')
             #, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
             sdateyearback = self.getPastDateFromToday(self.LookbackYears)
-            self.ax[6].plot(self.dfMACD.loc[self.dfMACD.index[:] >= sdateyearback, 'MACD_Signal'], 'r-', label='Signal')
-            self.ax[6].plot(self.dfMACD.loc[self.dfMACD.index[:] >= sdateyearback, 'MACD'], 'y-', label='MACD')
-            self.ax[6].plot(self.dfMACD.loc[self.dfMACD.index[:] >= sdateyearback, 'MACD_Hist'], 'b-', label='History')
+            self.ax[6].plot(self.dfMACD.loc[self.dfMACD.index[:] >= sdateyearback, 'MACD_Signal'], 'r-', gid=6, label='Signal')
+            self.ax[6].plot(self.dfMACD.loc[self.dfMACD.index[:] >= sdateyearback, 'MACD'], 'y-', gid=6, label='MACD')
+            self.ax[6].plot(self.dfMACD.loc[self.dfMACD.index[:] >= sdateyearback, 'MACD_Hist'], 'b-', gid=6, label='History')
             self.setAxesCommonConfig(6, 'm7', script_name, 'MACD')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
@@ -818,11 +899,11 @@ class PortfolioManager:
             # Visualization
             self.ax[7].clear()
             #self.ax[7].set_visible(True)
-            self.ax[7] = self.f.add_subplot(self.dictgraphmenu[7]['m8'][0], self.dictgraphmenu[7]['m8'][1], self.graphctr, visible=True, label='AROON')
+            self.ax[7] = self.f.add_subplot(self.dictgraphmenu[7]['m8'][0], self.dictgraphmenu[7]['m8'][1], self.graphctr, gid=7, visible=True, label='AROON')
                 #, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
             sdateyearback = self.getPastDateFromToday(self.LookbackYears)
-            self.ax[7].plot(self.dfAROON.loc[self.dfAROON.index[:] >= sdateyearback, 'Aroon Up'], 'r-', label='Up')
-            self.ax[7].plot(self.dfAROON.loc[self.dfAROON.index[:] >= sdateyearback, 'Aroon Down'], 'b-', label='Down')
+            self.ax[7].plot(self.dfAROON.loc[self.dfAROON.index[:] >= sdateyearback, 'Aroon Up'], 'r-', gid=7, label='Up')
+            self.ax[7].plot(self.dfAROON.loc[self.dfAROON.index[:] >= sdateyearback, 'Aroon Down'], 'b-', gid=7, label='Down')
             self.setAxesCommonConfig(7, 'm8', script_name, 'Aroon')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
@@ -854,12 +935,12 @@ class PortfolioManager:
             # Visualization
             self.ax[8].clear()
             #self.ax[8].set_visible(True)
-            self.ax[8] = self.f.add_subplot(self.dictgraphmenu[8]['m9'][0], self.dictgraphmenu[8]['m9'][1], self.graphctr, visible=True, label='BBANDS')
+            self.ax[8] = self.f.add_subplot(self.dictgraphmenu[8]['m9'][0], self.dictgraphmenu[8]['m9'][1], self.graphctr, gid=8, visible=True, label='BBANDS')
             #, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
             sdateyearback = self.getPastDateFromToday(self.LookbackYears)
-            self.ax[8].plot(self.dfBBANDS.loc[self.dfBBANDS.index[:] >= sdateyearback, 'Real Middle Band'], 'r-', label='Middle')
-            self.ax[8].plot(self.dfBBANDS.loc[self.dfBBANDS.index[:] >= sdateyearback, 'Real Upper Band'], 'b-', label='Upper')
-            self.ax[8].plot(self.dfBBANDS.loc[self.dfBBANDS.index[:] >= sdateyearback, 'Real Lower Band'], 'y-', label='Lower')
+            self.ax[8].plot(self.dfBBANDS.loc[self.dfBBANDS.index[:] >= sdateyearback, 'Real Middle Band'], 'r-', gid=8, label='Middle')
+            self.ax[8].plot(self.dfBBANDS.loc[self.dfBBANDS.index[:] >= sdateyearback, 'Real Upper Band'], 'b-', gid=8, label='Upper')
+            self.ax[8].plot(self.dfBBANDS.loc[self.dfBBANDS.index[:] >= sdateyearback, 'Real Lower Band'], 'y-', gid=8, label='Lower')
             self.setAxesCommonConfig(8, 'm9', script_name, 'Bollinger Bands')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
@@ -1071,16 +1152,36 @@ class PortfolioManager:
         
         savefilehandle.close()
 
+    def show_popup(self, event):
+        #self.popup_ongraph.post(argarrpoint[0], argarrpoint[1])
+       if event.inaxes is not None:
+            self.event = event
+            self.popup_ongraph.post(event.guiEvent.x_root, event.guiEvent.y_root)
+
+    def OnAnalysis(self):
+        msgbx.showinfo("Analysis", "Analysis")
+
+    def OnDetailGraph(self):
+        obj = classAllGraphs(master=self.root, argistestmode=self.bool_test, argkey=self.key,
+                    argscript=self.currentScript, argmenucalled=False, arggraphid=self.event.inaxes.get_gid(),
+                    argoutputtree=self.output_tree)
+        obj.InitializeWindow()
+
     def on_click_graphs(self, event):
-        if event.inaxes is not None:
-            self.xmouseposition = event.x
-            self.ymouseposition = event.y
-            return
+        self.event = event
+        return
+        #if event.inaxes is not None:
+            #self.xmouseposition = event.x
+            #self.ymouseposition = event.y
 
     def on_release_graphs(self, event):
-        if event.inaxes is not None:
-            if( (self.xmouseposition == event.x) and (self.ymouseposition == event.y)):
-                #msgbx.showinfo('If', 'xdata='+str(event.xdata) + '   ydata= ' + str(event.ydata))
+        #if event.inaxes is not None:
+        #if( (self.xmouseposition == event.x) and (self.ymouseposition == event.y)):
+        if( (self.event.x == event.x) and (self.event.y == event.y)):
+            if event.inaxes is not None:
+                self.event = event
+                self.popup_ongraph.post(event.guiEvent.x_root, event.guiEvent.y_root)
+            """#msgbx.showinfo('If', 'xdata='+str(event.xdata) + '   ydata= ' + str(event.ydata))
                 graphid = -1
                 if(event.inaxes == self.ax[0]):
                     graphid = 0 #Daily
@@ -1100,10 +1201,10 @@ class PortfolioManager:
                     graphid = 8 #AROON
                 elif (event.inaxes == self.ax[8]):
                     graphid = 9 #BBANDS
-                obj = classAllGraphs(master=self.content, argistestmode=self.bool_test, argkey=self.key,
+                obj = classAllGraphs(master=self.root, argistestmode=self.bool_test, argkey=self.key,
                             argscript=self.currentScript, argmenucalled=False, arggraphid=graphid,
                             argoutputtree=self.output_tree)
-                obj.InitializeWindow()
+                obj.InitializeWindow()"""
 
     def isPointOnGraphLine(self, argXData, argYData, argDF, argColName):
         #found = csvdf[csvdf['4. close'].astype('str').str.contains('1623.6')]
@@ -1119,13 +1220,50 @@ class PortfolioManager:
                 return True
         return False
 
-
     def on_mouse_move(self, event):
-        if event.inaxes is not None:
-            #msgbx.showinfo('If', 'xdata='+str(event.xdata) + '   ydata= ' + str(event.ydata))
+        #first remove existing visible annotation
+        if(self.annotate_visible):
             for i in range(len(self.ax)):
                 if(self.annotate_state[i] != None):
                     self.annotate_state[i].set_visible(False)
+                    annotations = [child for child in self.ax[i].get_children() if isinstance(child, matplotlib.text.Annotation)]
+                    for t in annotations:
+                        t.remove()
+                    self.annotate_state[i] = None
+            
+            #self.ax[event.inaxes.get_gid()].draw_artist(lines[0])
+            #fig.canvas.blit(axes[0].bbox)
+            
+            self.output_canvas.draw()
+
+        self.annotate_visible = False
+
+        #now check if point is on any of the lines
+        if event.inaxes is not None:
+            for line in self.ax[event.inaxes.get_gid()].lines:
+                self.annotate_visible, indarray = line.contains(event)
+                if(self.annotate_visible):
+                    break
+            if(self.annotate_visible):
+                self.annotate_state[event.inaxes.get_gid()] = self.ax[event.inaxes.get_gid()].annotate('{:.2f}'.format(event.ydata), 
+                        xy=(event.xdata, event.ydata), xycoords='data', 
+                        xytext=(1, 1), textcoords='offset points',
+                        #xytext=(event.xdata, event.ydata), textcoords='data',
+                        horizontalalignment="left", 
+                        #arrowprops=dict(arrowstyle="simple", connectionstyle="arc3,rad=-0.2"),
+                        bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
+                        fontsize='xx-small')
+                self.output_canvas.draw()
+            
+
+    def old_on_mouse_move(self, event):
+        if event.inaxes is not None:
+            #msgbx.showinfo('If', 'xdata='+str(event.xdata) + '   ydata= ' + str(event.ydata))
+            print('in mouse move--' + str(time.thread_time()))
+            for i in range(len(self.ax)):
+                if(self.annotate_state[i] != None):
+                    self.annotate_state[i].set_visible(False)
+                print('after if annotate--' + str(time.thread_time()))
             
                 if(event.inaxes == self.ax[i]):
                     #line1_data = self.ax[0].lines[0].get_xydata()
@@ -1134,22 +1272,29 @@ class PortfolioManager:
                     #if( (a in line1_data) or (a in line2_data)):
                     bline1 = False
                     for j in range(len(self.ax[i].lines)):
+                        print('before contain--' + str(time.thread_time()))
                         bline1, indarray = self.ax[i].lines[j].contains(event)
+                        print('after contain--' + str(time.thread_time()))
                         if(bline1):
                             break
                     if(bline1):
+                        print('before annotate--' + str(time.thread_time()))
                         self.annotate_state[i] = self.ax[i].annotate('{:.2f}'.format(event.ydata), 
                                 xy=(event.xdata, event.ydata), xycoords='data', 
-                                xytext=(event.xdata, event.ydata), textcoords='data',
-                                horizontalalignment="left", arrowprops=dict(arrowstyle="simple", 
-                                connectionstyle="arc3,rad=-0.2"),
+                                xytext=(1, 1), textcoords='offset points',
+                                #xytext=(event.xdata, event.ydata), textcoords='data',
+                                horizontalalignment="left", 
+                                #arrowprops=dict(arrowstyle="simple", connectionstyle="arc3,rad=-0.2"),
                                 bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
                                 fontsize='xx-small')
+                        print('after annotate--' + str(time.thread_time()))
                         self.annotate_state[i].set_visible(True)
                         break
             
-            self.f.set_tight_layout(True)
+            print('before draw--' + str(time.thread_time()))
+            #self.f.set_tight_layout(True)
             self.output_canvas.draw()
+            print('after draw--' + str(time.thread_time()))
 
                 #if( self.ax[0].contains(event)[0] == True):
             """if( self.isPointOnGraphLine(event.xdata, event.ydata, self.dfDaily, '4. close')):

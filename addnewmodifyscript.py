@@ -1,3 +1,4 @@
+#v1.0
 #v0.9 - All research graph via menu & mouse click
 #v0.8 - Candlestick graphs
 #v0.7 - Base version with all graphs and bug fixes

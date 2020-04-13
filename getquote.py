@@ -1,3 +1,4 @@
+#v1.0
 #v0.9 - All research graph via menu & mouse click
 #v0.8 - Candlestick graphs
 #v0.7 - Base version with all graphs and bug fixes
@@ -31,7 +32,7 @@ class classGetQuote(Toplevel):
         #graph filter params
         self.pastdate = str(date.today())
         self.graphctr=1
-
+        
         if(len(self.script)<=0):
             self.wm_title("Get Quote")
         else:
@@ -323,10 +324,10 @@ class classGetQuote(Toplevel):
             #daily
             if(self.bdaily.get() == True):
                 if(self.bool_test):
-                    testobj = PrepareTestData()
+                    testobj = PrepareTestData(argOutputSize='full')
                     dfdata = testobj.loadDaily(self.script)
                 else:
-                    dfdata, dfmetadata = ts.get_daily(symbol=self.script)
+                    dfdata, dfmetadata = ts.get_daily(symbol=self.script, outputsize='full')
                 #self.changeColNameTypeofDailyTS()
                 #self.f.add_subplot(3, 3, graphctr, label='Daily closing price', 
                 #    xlabel='Date', ylabel='Closing price').plot(self.dfdailyts['Close'], label='Daily closing price')
@@ -341,10 +342,10 @@ class classGetQuote(Toplevel):
             #intraday
             if(self.bintra.get() == True):
                 if(self.bool_test):
-                    testobj = PrepareTestData()
+                    testobj = PrepareTestData(argOutputSize='full')
                     dfdata = testobj.loadIntra(self.script)
                 else:
-                    dfdata, dfmetadata = ts.get_intraday(symbol=self.script)
+                    dfdata, dfmetadata = ts.get_intraday(symbol=self.script, outputsize='full')
                 dfdata = dfdata.sort_index(axis=0, ascending=False)
                 #dfdata=dfdata[dfdata.index[:] >= self.pastdate]
                 ax2=self.f.add_subplot(3,3,self.graphctr, label='Intra-day close')

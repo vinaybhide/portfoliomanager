@@ -58,3 +58,4 @@ v0.6 - Added test data support via downloaded file for all except get_quote_endp
  v0.9
       1. Added Research graph popup dialog - can be accessed via menu & left click on script graph
       2. Added on mouse move show amount for DailyVsSMA graph. Needs improvement
+ v1.0 - All beta features complete
