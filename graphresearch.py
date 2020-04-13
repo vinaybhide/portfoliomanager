@@ -1,3 +1,4 @@
+#v1.0
 #v0.9 - All research graph via menu & mouse click
 from tkinter import *
 from tkinter import ttk
@@ -578,26 +579,42 @@ class classAllGraphs(Toplevel):
                 ts = TimeSeries(self.key, output_format='pandas')
                 ti = TechIndicators(self.key, output_format='pandas')
             if(argCurrGraph == 0): #load daiy
+                strsize = self.outpusize_combo_text1.get()
                 if(self.bool_test):
-                    dfdata = testobj.loadDaily(self.script)
+                    testobjDaily = PrepareTestData(argOutputSize=strsize)
+                    dfdata = testobjDaily.loadDaily(self.script)
                 else:
-                    strsize = self.outpusize_combo_text1.get()
                     dfdata, dfmetadata = ts.get_daily(symbol=self.script,
                                             outputsize=strsize)
 
                 dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
                 #self.l1, = self.ax.plot(dfdata['4. close'], label='Close', gid=argCurrGraph)
-                self.ax.plot(dfdata['4. close'], label='Close', gid=argCurrGraph)
+                self.ax.plot(dfdata['4. close'], label='Close', gid=argCurrGraph, marker='D', markersize = 5, markevery=10)
+                dfEvery10 = dfdata.iloc[::10, :]
+                for antcounter, txt in enumerate(dfEvery10['4. close']):
+                        self.showCandelAnnotation(argAxis=self.ax, argTextToShow=txt, 
+                                argX=mdates.datestr2num(str(dfEvery10.index[antcounter])), 
+                                argY=float(txt), argXYcoords='data', argXText=1, argYText=1, 
+                                argTextcoords='offset points', 
+                                argHA='right', argVA='bottom', argFontsize='xx-small', argCurrGraph=argCurrGraph)
             elif(argCurrGraph == 1): #intra
+                strsize = self.outpusize_combo_text2.get()
                 if(self.bool_test):
-                    dfdata = testobj.loadIntra(self.script)
+                    testobjIntra = PrepareTestData(argOutputSize=strsize)                    
+                    dfdata = testobjIntra.loadIntra(self.script)
                 else:
                     dfdata, dfmetadata = ts.get_intraday(symbol=self.script, 
                                                 interval=self.interval_combo_text2.get(), 
-                                                outputsize=self.outpusize_combo_text2.get())
+                                                outputsize=strsize)
                 #self.l2, = self.ax.plot(dfdata['4. close'], label='Intra-day', gid=argCurrGraph)
                 dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
                 self.ax.plot(dfdata['4. close'], label='Intra-day', gid=argCurrGraph)
+                dfEvery10 = dfdata.iloc[::10, :]
+                for antcounter, txt in enumerate(dfEvery10['4. close']):
+                        self.showCandelAnnotation(argAxis=self.ax, argTextToShow=txt, 
+                                argX=mdates.datestr2num(str(dfEvery10.index[antcounter])), argY=float(dfEvery10.iloc[antcounter]['4. close']),
+                                argXYcoords='data', argXText=1, argYText=1, argTextcoords='offset points', 
+                                argHA='right', argVA='bottom', argFontsize='xx-small', argCurrGraph=argCurrGraph)
             elif(argCurrGraph == 2): #SMA
                 if(self.bool_test):
                     dfdata = testobj.loadSMA(self.script)
@@ -691,10 +708,11 @@ class classAllGraphs(Toplevel):
                 self.ax.plot(dfdata['Real Middle Band'], label='Real Middle Band', gid=argCurrGraph)
                 self.ax.plot(dfdata['Real Lower Band'], label='Real Lower Band', gid=argCurrGraph)
             elif(argCurrGraph == 10): #candlestick
+                strsize = self.outpusize_combo_text11.get()
                 if(self.bool_test):
-                    dfdata = testobj.loadDaily(self.script)
+                    testobjCandle = PrepareTestData(argOutputSize=strsize)
+                    dfdata = testobjCandle.loadDaily(self.script)
                 else:
-                    strsize = self.outpusize_combo_text11.get()
                     dfdata, dfmetadata = ts.get_daily(symbol=self.script,
                                             outputsize=strsize)
 
@@ -763,6 +781,15 @@ class classAllGraphs(Toplevel):
 
         for c in self.ax.lines:
             c.remove()
+
+        ####Following block is needed for candlestick bar graphs
+        for b in self.ax.containers:
+            for p in b.patches:
+                p.remove()
+        #this will return list of annotations if any
+        annotations = [child for child in self.ax.get_children() if isinstance(child, matplotlib.text.Annotation)]
+        for t in annotations:
+            t.remove()
 
         del self.ax.containers[0:]
 

@@ -1,3 +1,4 @@
+#v1.0
 #v0.9 - All research graph via menu & mouse click
 #v0.8 - Candlestick graphs
 #v0.6
@@ -19,6 +20,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 import warnings
 from datetime import date
 from testdata import *
+from mfdownloaddata import MFData
 
 class ScriptTreeView(ttk.Treeview):
     def __init__(self, master=None, argTS = None, argTI = None, argFigure = None, argTestMode = None, argCanvas = None, argToolbar = None, **kw):
@@ -441,3 +443,75 @@ class ScriptTreeView(ttk.Treeview):
             except Exception as e:
                 return False
             return True
+
+    def get_mf_quote(self, argHoldingIID = '', argStockName='', argPriceDf=DataFrame(), *args):
+        #global bool_test
+        dfstockname = DataFrame()
+        listselfcol = list()
+        listselfval = list()
+        if(len(args) == 5):
+            argctr = 0
+            for eacharg in args:
+                argsplit = eacharg.split('=')
+                listselfcol.insert(argctr, argsplit[0].strip())
+                listselfval.insert(argctr, argsplit[1].strip())
+                argctr += 1
+          
+            try:
+                listindex = listselfcol.index('Purchase Price')
+                sPurchasePrice = listselfval[listindex]
+                listindex = listselfcol.index('Purchase Date')
+                sPurchaseDate = listselfval[listindex]
+                listindex = listselfcol.index('Purchase Qty')
+                sQty = listselfval[listindex]
+                listindex = listselfcol.index('Commission Paid')
+                sCommissionPaid = listselfval[listindex]
+                listindex = listselfcol.index('Cost of Investment')
+                sCost = listselfval[listindex]
+            except ValueError as verr:
+                msgbx.showerror("Error", "Insufficient arguments passed in *args")
+                return
+        else:
+            msgbx.showerror("Error", "Insufficient arguments passed in *args")
+            return
+        
+        try:
+            if(argPriceDf.empty == True):
+                obj = MFData()
+                self.currentNavDF = obj.DownloadCurrentMF()
+                dfstockname = self.currentNavDF[self.currentNavDF['Scheme Name']==argStockName]
+            else:
+                dfstockname = argPriceDf
+        except Exception as error:
+            msgbx.showerror("Error whiel getting current NAV", error)
+            return
+        currNav = float(dfstockname.values[0][4])
+        status = ''
+        currentvalue=0.00
+        if((len(sQty) > 0) and (len(sCost) > 0)):
+            currentvalue = currNav * float(sQty)
+            if(currentvalue > float(sCost)):
+                status = '↑'
+            elif (currentvalue < float(sCost)):
+                status = '↓'
+            elif (currentvalue == float(sCost)):
+                status = '↔'
+            
+        listselfcol.insert(argctr, 'Current Value')
+        listselfval.insert(argctr, str(currentvalue))
+        argctr += 1
+        listselfcol.insert(argctr, 'Status')
+        listselfval.insert(argctr, status)  #alt 24 ↑, alt 25 ↓, alt 29 ↔
+
+        dfcolumnlen = len(dfstockname.columns)
+        heading_list=list(dfstockname.columns[0:dfcolumnlen])
+
+        if(dfcolumnlen > len(listselfcol)):
+            self.output_counter = self.print_heading(dfcolumnlen, self.output_counter)
+        else:
+            self.output_counter = self.print_heading(len(listselfcol), self.output_counter)
+        
+        values_list=list((dfstockname.values[0:dfcolumnlen])[0])
+        #commenting for heirarchy
+        #self.print_values(values_list)
+        self.output_counter = self.print_values(argHoldingIID, heading_list, values_list, listselfcol, listselfval, self.output_counter)

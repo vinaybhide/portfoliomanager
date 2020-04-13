@@ -1,3 +1,4 @@
+#v1.0
 #v0.9 - All research graph via menu & mouse click
 #v0.8 - Candlestick graphs
 #v0.7 - Base version with all graphs and bug fixes. Test
@@ -43,7 +44,7 @@ from testdata import *
 
 class BackTestSMA(Toplevel):
     def __init__(self, master=None, argkey=None, argscript=None, argscripttree=None, 
-                argavgsmall=None, argavglarge=None, argIsTest=False):
+                argavgsmall=None, argavglarge=None, arglookbackyears=1, argIsTest=False):
         Toplevel.__init__(self, master=master)
         self.key = argkey
         self.script = argscript
@@ -56,6 +57,7 @@ class BackTestSMA(Toplevel):
         #numbers for SMA
         self.avgsmall = argavgsmall
         self.avglarge = argavglarge
+        self.lookbackyears=arglookbackyears
         
         self.bool_test = argIsTest
 
@@ -316,12 +318,12 @@ class BackTestSMA(Toplevel):
     # argLookbackYears - is the no of years we want to go back from today
     # if today is 2020-03-23 & argLookbackYears = 1, return will be 2019-03-23
     # the expetion takes care of leap year
-    def getPastDateFromDate(self, argFromDate=date.today(), argLookbackYears=1):
+    def getPastDateFromDate(self, argFromDate=date.today()):
         try:
             dt = argFromDate
-            dt = dt.replace(year=dt.year-argLookbackYears)
+            dt = dt.replace(year=dt.year-self.lookbackyears)
         except ValueError:
-            dt = dt.replace(year=dt.year-argLookbackYears, day=dt.day-1)
+            dt = dt.replace(year=dt.year-self.lookbackyears, day=dt.day-1)
         return str(dt)
 
     """getDateAfter(self, argFromDate=str(date.today()), argNoOfDays=1)
@@ -338,8 +340,8 @@ class BackTestSMA(Toplevel):
         return str(dt)
 
 
-    def plotPortfolioPerformanceAX(self):
-        ax1 = self.f.add_subplot(2, 2, 1, label='Portfolio performance') 
+    def plotPortfolioPerformanceAX(self, argrows, argcols, argindex):
+        ax1 = self.f.add_subplot(argrows, argcols, argindex, label='Portfolio performance') 
         ax1.plot(self.dfScript.loc[self.dfScript.index[:] >= 
             self.dfholdingvalues['PurchaseDate'][self.dfholdingvalues.shape[0]-1], 'CurrentVal'], 
             label='Portfolio price')
@@ -353,8 +355,9 @@ class BackTestSMA(Toplevel):
             ax1.annotate('Total Qty='+ str(buys['CumulativeQTY'][i]) + " "+buys['Status'][i], 
                         (mdates.datestr2num(buys['PurchaseDate'][i]), buys['CurrentVal'][i]),
                         xycoords='data',
-                        xytext=(mdates.datestr2num(self.getDateAfter(buys['PurchaseDate'][i])), buys['CurrentVal'][i]+2), 
-                        textcoords='data', arrowprops=dict(arrowstyle='-|>'),
+                        #xytext=(mdates.datestr2num(self.getDateAfter(buys['PurchaseDate'][i])), buys['CurrentVal'][i]+2), textcoords='data', 
+                        xytext=(1, 1), textcoords='offset points', 
+                        #arrowprops=dict(arrowstyle='-|>'),
                         horizontalalignment="left", bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
                         fontsize='xx-small')
         self.setAxesCommonConfig(ax1, 'Portfolio performance - ' + self.script, "Portfolio Value")
@@ -364,16 +367,17 @@ class BackTestSMA(Toplevel):
         argAxis.annotate(argTextToShow, 
                 xy=(argX, argY),
                 xycoords=argXYcoords, 
-                xytext=(argXText, argYText), 
-                textcoords=argTextcoords, ha=argHA, va=argVA, fontsize=argFontsize, color='red', annotation_clip=True)
+                #xytext=(argXText, argYText), textcoords=argTextcoords, 
+                xytext=(1, 1), textcoords='offset points', 
+                ha=argHA, va=argVA, fontsize=argFontsize, color='red', annotation_clip=True)
 
-    def plotMarketDataCandleSticks(self):
-        ax2 = self.f.add_subplot(2, 2, 2, label='Open High Low Close') 
+    def plotMarketDataCandleSticks(self, argrows, argcols, argindex):
+        ax2 = self.f.add_subplot(argrows, argcols, argindex, label='Open High Low Close') 
         
         ssincedate = datetime.datetime.strptime(self.dfholdingvalues['PurchaseDate'][0], "%Y-%m-%d")
         ssincedate = date(ssincedate.year, ssincedate.month, ssincedate.day)
         
-        syearpastfirst = self.getPastDateFromDate(argFromDate=ssincedate, argLookbackYears=1)
+        syearpastfirst = self.getPastDateFromDate(argFromDate=ssincedate)
         width=0.5
         width2=0.1
         #'1. open':'Open', '2. high':'High', '3. low':'Low', '4. close':'Close', '5. volume':'Volume
@@ -492,13 +496,13 @@ class BackTestSMA(Toplevel):
         self.setAxesCommonConfig(ax2, 'Candlestick - ' + self.script, 'Prices')
 
     #plots market data year from the first purchase date
-    def plotMarketData(self):
-        ax3 = self.f.add_subplot(2, 2, 3, label='Market Data') 
+    def plotMarketData(self, argrows, argcols, argindex):
+        ax3 = self.f.add_subplot(argrows, argcols, argindex, label='Market Data') 
         
         ssincedate = datetime.datetime.strptime(self.dfholdingvalues['PurchaseDate'][0], "%Y-%m-%d")
         ssincedate = date(ssincedate.year, ssincedate.month, ssincedate.day)
         
-        syearpastfirst = self.getPastDateFromDate(argFromDate=ssincedate, argLookbackYears=1)
+        syearpastfirst = self.getPastDateFromDate(argFromDate=ssincedate)
 
         #ax2.plot(self.dfScript.loc[self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][0], 'Close'], label='Daily Close from first purchase')
         ax3.plot(self.dfScript.loc[self.dfScript.index[:] >= syearpastfirst, 'Close'], 
@@ -515,8 +519,9 @@ class BackTestSMA(Toplevel):
             ax3.annotate('Qty='+ str(buys['PurchaseQTY'][i]) + " @ "+ str(buys['PurchasePrice'][i]), 
                         (mdates.datestr2num(buys['PurchaseDate'][i]), float(buys['Close'][i])),
                         xycoords='data', 
-                        xytext=(mdates.datestr2num(self.getDateAfter(buys['PurchaseDate'][i])), float(buys['Close'][i])+2), 
-                        textcoords='data', arrowprops=dict(arrowstyle='-|>'),
+                        xytext=(1, 1), textcoords='offset points', 
+                        #xytext=(mdates.datestr2num(self.getDateAfter(buys['PurchaseDate'][i])), float(buys['Close'][i])+2), textcoords='data', 
+                        #arrowprops=dict(arrowstyle='-|>'),
                         horizontalalignment="left", bbox=dict(boxstyle="round", facecolor="w", edgecolor="0.5", alpha=0.9), 
                         fontsize='xx-small')
 
@@ -529,28 +534,26 @@ class BackTestSMA(Toplevel):
         buys_suggested= self.dfScript.loc[self.dfScript.index[:] >= syearpastfirst]
         buys_suggested = buys_suggested[buys_suggested['Order'] == 1]
         
-        #Commenting temporarily
-        #ax3.plot(buys_suggested.index, self.dfScript['Close'].loc[buys_suggested.index], 
-        #        marker=6, markersize=2, color='b', label='Buy', linestyle='None')
+        ax3.plot(buys_suggested.index, self.dfScript['Close'].loc[buys_suggested.index], 
+                marker=6, markersize=5, color='b', label='Buy', linestyle='None')
 
         #sells_suggested=self.dfScript.loc[self.dfScript['Order'] == 0, 'Order']
         #sells_suggested= self.dfScript.loc[self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][0]]
         sells_suggested= self.dfScript.loc[self.dfScript.index[:] >= syearpastfirst]
         sells_suggested = sells_suggested[sells_suggested['Order'] == 0]
 
-        #Commenting temporarily
-        #ax3.plot(sells_suggested.index, self.dfScript['Close'].loc[sells_suggested.index], 
-        #        marker=7, markersize=2, color='r', label='Sell', linestyle='None')
+        ax3.plot(sells_suggested.index, self.dfScript['Close'].loc[sells_suggested.index], 
+                marker=7, markersize=5, color='r', label='Sell', linestyle='None')
 
         self.setAxesCommonConfig(ax3, 'Market Data - ' + self.script, 'Price')
 
-    def plotScriptReturns(self):
-        ax4 = self.f.add_subplot(2, 2, 4, label='Market Data') 
+    def plotScriptReturns(self, argrows, argcols, argindex):
+        ax4 = self.f.add_subplot(argrows, argcols, argindex, label='Market Data') 
         
         ssincedate = datetime.datetime.strptime(self.dfholdingvalues['PurchaseDate'][0], "%Y-%m-%d")
         ssincedate = date(ssincedate.year, ssincedate.month, ssincedate.day)
         
-        syearpastfirst = self.getPastDateFromDate(argFromDate=ssincedate, argLookbackYears=1)
+        syearpastfirst = self.getPastDateFromDate(argFromDate=ssincedate)
 
         ax4.plot(self.dfScript.loc[self.dfScript.index[:] >= syearpastfirst, 'CumReturns'], 
                 label='Cumulative Returns - Year from first purchase')
@@ -595,7 +598,7 @@ class BackTestSMA(Toplevel):
         ax2 = plt.subplot(222)
         ax2.set_label('One year performance') 
 
-        sdateyearback = self.getPastDateFromDate(argFromDate=date.today(), argLookbackYears=1)
+        sdateyearback = self.getPastDateFromDate(argFromDate=date.today())
 
         buys= self.dfScript.loc[self.dfScript.index[:] >= self.dfholdingvalues['PurchaseDate'][0]]
         buys = buys[buys['Status'] != '']
@@ -663,8 +666,8 @@ class BackTestSMA(Toplevel):
     """ findScriptPerformance
         This method will execute Alpha
     """
-    def findScriptPerformance(self):
-
+    def findScriptPerformance(self, argShowPerformance=True, argShowCandlestick=True, 
+                            argShowMarketData=True, argShowReturns=True):
         self.getScriptDataFromTree()
         if(self.dfholdingvalues.shape[0] < 1):
             msgbx.showwarning("Script Performance", "No script data found. Please add your purchased scripts before doing performance calculations")
@@ -672,7 +675,7 @@ class BackTestSMA(Toplevel):
 
         try:
             if(self.bool_test):
-                testobj = PrepareTestData()
+                testobj = PrepareTestData(argOutputSize='full')
                 self.dfScript = testobj.loadDaily(self.script)
                 #self.dfSMAShort = testobj.loadSMA(self.script, self.avgsmall)
                 #self.dfSMAShort = testobj.loadSMA(self.script, self.avglarge)
@@ -691,10 +694,37 @@ class BackTestSMA(Toplevel):
         self.setCurrentValInMarketDF()
         self.addPerformance()
         #self.plotPerformanceGraphTS()
-        self.plotPortfolioPerformanceAX()
-        self.plotMarketDataCandleSticks()
-        self.plotMarketData()
-        self.plotScriptReturns()
+        sumofgraphs = int(argShowPerformance) + int(argShowCandlestick) + int(argShowMarketData) + int(argShowReturns)
+        nrows=1
+        ncols=1
+        nindex=1
+        if(sumofgraphs == 4):
+            nrows=ncols=2
+            nindex=1
+        elif(sumofgraphs == 3):
+            nrows=1
+            ncols=3
+            nindex=1
+        elif(sumofgraphs == 2):
+            nrows=2
+            ncols=1
+            nindex=1
+        elif(sumofgraphs == 1):
+            nrows=1
+            ncols=1
+            nindex=1
+        if(argShowPerformance):
+            self.plotPortfolioPerformanceAX(nrows, ncols, nindex)
+            nindex +=1
+        if(argShowCandlestick):
+            self.plotMarketDataCandleSticks(nrows, ncols, nindex)
+            nindex +=1
+        if(argShowMarketData):
+            self.plotMarketData(nrows, ncols, nindex)
+            nindex +=1
+        if(argShowReturns):
+            self.plotScriptReturns(nrows, ncols, nindex)
+            nindex +=1
 
         self.f.set_tight_layout(True)
         self.output_canvas.draw()

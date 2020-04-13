@@ -1,3 +1,4 @@
+#v1.0
 #v0.9 - All research graph via menu & mouse click
 #v0.8 - Candlestick graphs
 #v0.7 - Base version with all graphs and bug fixes
@@ -7,15 +8,20 @@ from pandas import DataFrame
 from alpha_vantage.timeseries import TimeSeries
 from alpha_vantage.techindicators import TechIndicators
 
-class PrepareTestData:
-    def __init__(self, argFolder='e:\\downloaded\\'):
+class PrepareTestData():
+    def __init__(self, argFolder='E:\\python_projects\\PortfolioManager\\ScriptData\\', argOutputSize='compact'):
         super().__init__()
         self.folder = argFolder
+        self.outputsize = argOutputSize.lower()
         return
     
     def loadDaily(self, argScript):
         try:
-            csvdf = pd.read_csv(self.folder + 'daily_'+argScript+'.csv')
+            if(self.outputsize == 'compact'):
+                filename=self.folder + 'daily_compact_'+argScript+'.csv'
+            else:
+                filename=self.folder + 'daily_full_'+argScript+'.csv'
+            csvdf = pd.read_csv(filename)
             csvdf=csvdf.rename(columns={'open':'1. open', 'high':'2. high', 'low':'3. low', 'close':'4. close', 'volume': '5. volume'})
             convert_type={'1. open':float, '2. high':float, '3. low':float, '4. close':float, '5. volume':float}
             csvdf = csvdf.astype(convert_type)
@@ -31,7 +37,12 @@ class PrepareTestData:
 
     def loadIntra(self, argScript):
         try:
-            csvdf = pd.read_csv(self.folder + 'intraday_5min_'+argScript+'.csv')
+            if(self.outputsize == 'compact'):
+                filename=self.folder + 'intraday_5min_compact_'+argScript+'.csv'
+            else:
+                filename=self.folder + 'intraday_5min_full_'+argScript+'.csv'
+
+            csvdf = pd.read_csv(filename)
             csvdf=csvdf.rename(columns={'open':'1. open', 'high':'2. high', 'low':'3. low', 'close':'4. close', 'volume': '5. volume'})
             convert_type={'1. open':float, '2. high':float, '3. low':float, '4. close':float, '5. volume':float}
             csvdf = csvdf.astype(convert_type)
