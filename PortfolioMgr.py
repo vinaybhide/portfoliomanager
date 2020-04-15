@@ -57,6 +57,7 @@ from getquote import *
 from testdata import *
 from graphresearch import *
 from downloaddata import *
+from portfoliovaluation import *
 
 class PortfolioManager:
     def __init__(self):
@@ -128,6 +129,8 @@ class PortfolioManager:
         self.script_menu.add_command(label="Get Quote", underline = 0, command=self.menuGetStockQuote)
         self.script_menu.add_separator()
         self.script_menu.add_command(label="Refresh Selected Script with Market Price", underline = 0, command=self.menuRefreshScriptData)
+        self.script_menu.add_separator()
+        self.script_menu.add_command(label="Portfolio performance", underline = 0, command=self.menuPortfolioPerformance)
         self.menu.add_cascade(label='Manage Portfolio', underline = 0, menu=self.script_menu)
 
         # research script menu
@@ -336,6 +339,11 @@ class PortfolioManager:
             except Exception as e:
                 msgbx.showerror('Delete Error', "Selected entry could not be deleted due to error:-" + str(e))
                 return
+
+    def menuPortfolioPerformance(self):
+        obj = PortfolioValuation(master=self.root, argkey=self.key, 
+                    argscripttree=self.output_tree,argIsTest=self.bool_test)
+        obj.ShowPortfolioPerformance()
 
     """ called on right click menu selection """
     def menuShowScriptPerformanceAllGraphs(self):

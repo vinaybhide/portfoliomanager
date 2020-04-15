@@ -179,6 +179,7 @@ class BackTestSMA(Toplevel):
                         calculate the Alpha.CurretnValue = self.dfholdingvalues[i].QTY * Alpha.ClosePrice
                         set Alpha.QTY = self.dfholdingvalues[i].QTY
                         set Alpha.Commision = self.dfholdingvalues[i].commission    """
+    
     def setCurrentValInMarketDF(self):
         #find the shape of self.dfholdingvalues. shape returns tuple (no of rows, no of cols)
         imax = self.dfholdingvalues.shape[0]
