@@ -22,21 +22,36 @@ class classDownloadData(Toplevel):
         self.outputsize='compact'
         self.configure(padx=5, pady=10)
 
+        self.graph_select_label = ttk.Label(self, text='Select Item: ')
+        self.graph_select_combo_text = StringVar()
+        self.graph_select_combo = ttk.Combobox(self, width=30, textvariable=self.graph_select_combo_text,
+                values=['Daily price', 'Intraday', 'Simple moving avg', 'Volume weighted avg price', 
+                'Relative strength index', 'Avg directional movement index', 'Stochastic oscillator',
+                'Moving average convergence/divergence', 'Aroon', 'Bollinger bands', 'OHCL-Candlestick'], state='readonly')
+
+        self.btn_download_selected = ttk.Button(self, text='Download Selected', command=self.btnDownloadSelected)
+
         self.btn_download_full = ttk.Button(self, text='Download All (outputsize=full)', command=self.btnDownloadFull)
         self.btn_download_compact = ttk.Button(self, text="Download All (outputsize=compact)", command=self.btnDownloadCompact)
         self.btn_close = ttk.Button(self, text="Close", command=self.OnClose)
         self.progressbar = ttk.Progressbar(self, length=130, orient= HORIZONTAL, mode='determinate')
 
-        self.btn_download_full.grid_configure(row=0, column=1, padx=5, pady=5)
-        self.btn_download_compact.grid_configure(row=0, column=2, padx=5, pady=5)
-        self.progressbar.grid_configure(row=0, column=3, padx=5, pady=5)
-        self.btn_close.grid_configure(row=0, column=4, padx=5, pady=5)
+        self.graph_select_label.grid_configure(row=0, column=1, padx=5, pady=5)
+        self.graph_select_combo.grid_configure(row=0, column=2, padx=5, pady=5)
+        self.btn_download_selected.grid_configure(row=0, column=3, padx=5, pady=5)
 
+        self.btn_download_full.grid_configure(row=1, column=1, padx=5, pady=5)
+        self.btn_download_compact.grid_configure(row=1, column=2, padx=5, pady=5)
+        self.progressbar.grid_configure(row=1, column=3, padx=5, pady=5)
+        self.btn_close.grid_configure(row=1, column=4, padx=5, pady=5)
+
+       
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure(2, weight=1)
         self.grid_columnconfigure(3, weight=1)
         self.grid_columnconfigure(4, weight=1)
+        self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
     def OnClose(self):
@@ -352,6 +367,12 @@ class classDownloadData(Toplevel):
         dftest = frandf[frandf['Date'].notnull()]
         print(dftest)
         input()
+
+    def btnDownloadSelected(self):
+        currselection = self.graph_select_combo.current()
+        print(currselection)
+
+        #self.graph_select_combo.
 
 
 if __name__ == "__main__":
