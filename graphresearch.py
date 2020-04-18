@@ -800,6 +800,7 @@ class classAllGraphs(Toplevel):
         self.output_canvas.draw()
         self.toolbar.update()
 
+
     def showCandelAnnotation(self, argAxis, argTextToShow, argX, argY, argXYcoords, 
                             argXText, argYText, argTextcoords, argHA, argVA, argFontsize, argCurrGraph):
         argAxis.annotate(argTextToShow, 
