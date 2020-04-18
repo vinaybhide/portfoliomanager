@@ -21,13 +21,37 @@ class classDownloadData(Toplevel):
         self.folder = argFolder
         self.outputsize='compact'
         self.configure(padx=5, pady=10)
+        self.bisfulldownload = True
+        self.mb = ttk.Menubutton (self, text="Select items to download")
+        self.mb.grid()
+        self.mb.menu  =  Menu(self.mb, tearoff=0)
+        self.mb["menu"]  = self.mb.menu
 
-        self.graph_select_label = ttk.Label(self, text='Select Item: ')
-        self.graph_select_combo_text = StringVar()
-        self.graph_select_combo = ttk.Combobox(self, width=30, textvariable=self.graph_select_combo_text,
-                values=['Daily price', 'Intraday', 'Simple moving avg', 'Volume weighted avg price', 
-                'Relative strength index', 'Avg directional movement index', 'Stochastic oscillator',
-                'Moving average convergence/divergence', 'Aroon', 'Bollinger bands', 'OHCL-Candlestick'], state='readonly')
+        self.Item0 = IntVar()
+        self.Item1 = IntVar()
+        self.Item2 = IntVar()
+        self.Item3 = IntVar()
+        self.Item4 = IntVar()
+        self.Item5 = IntVar()
+        self.Item6 = IntVar()
+        self.Item7 = IntVar()
+        self.Item8 = IntVar()
+        self.Item9 = IntVar()
+        self.Item10 = IntVar()
+        self.Item11 = IntVar()
+
+        self.mb.menu.add_checkbutton ( label="Daily price", variable=self.Item0)
+        self.mb.menu.add_checkbutton ( label="Intraday", variable=self.Item1)
+        self.mb.menu.add_checkbutton ( label="Simple moving avg", variable=self.Item2)
+        self.mb.menu.add_checkbutton ( label="Volume weighted avg price", variable=self.Item3)
+        self.mb.menu.add_checkbutton ( label="Relative strength index", variable=self.Item4)
+        self.mb.menu.add_checkbutton ( label="Avg directional movement index", variable=self.Item5)
+        self.mb.menu.add_checkbutton ( label="Stochastic oscillator", variable=self.Item6)
+        self.mb.menu.add_checkbutton ( label="Moving average convergence/divergence", variable=self.Item7)
+        self.mb.menu.add_checkbutton ( label="Aroon", variable=self.Item8)
+        self.mb.menu.add_checkbutton ( label="Bollinger bands", variable=self.Item9)
+        self.mb.menu.add_checkbutton ( label="EMA", variable=self.Item10)
+        self.mb.menu.add_checkbutton ( label="Quote end point", variable=self.Item11)
 
         self.btn_download_selected = ttk.Button(self, text='Download Selected', command=self.btnDownloadSelected)
 
@@ -36,9 +60,8 @@ class classDownloadData(Toplevel):
         self.btn_close = ttk.Button(self, text="Close", command=self.OnClose)
         self.progressbar = ttk.Progressbar(self, length=130, orient= HORIZONTAL, mode='determinate')
 
-        self.graph_select_label.grid_configure(row=0, column=1, padx=5, pady=5)
-        self.graph_select_combo.grid_configure(row=0, column=2, padx=5, pady=5)
-        self.btn_download_selected.grid_configure(row=0, column=3, padx=5, pady=5)
+        self.mb.grid_configure(row=0, column=1, padx=5, pady=5)
+        self.btn_download_selected.grid_configure(row=0, column=2, padx=5, pady=5)
 
         self.btn_download_full.grid_configure(row=1, column=1, padx=5, pady=5)
         self.btn_download_compact.grid_configure(row=1, column=2, padx=5, pady=5)
@@ -60,7 +83,7 @@ class classDownloadData(Toplevel):
     def downloadQuoteEndPoint(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={}&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&syself.mbol={}&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'global_quote_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -77,7 +100,7 @@ class classDownloadData(Toplevel):
     def downloadIntra(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol={}&interval=5min&apikey={}&outputsize={}&datatype=csv'.format(script, self.key, self.outputsize)
+                url = 'https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&syself.mbol={}&interval=5min&apikey={}&outputsize={}&datatype=csv'.format(script, self.key, self.outputsize)
                 filename = 'intraday_5min_{}_{}.csv'.format(self.outputsize, script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -95,7 +118,7 @@ class classDownloadData(Toplevel):
     def downloadDaily(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={}&apikey={}&outputsize={}&datatype=csv'.format(script, self.key, self.outputsize)
+                url = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&syself.mbol={}&apikey={}&outputsize={}&datatype=csv'.format(script, self.key, self.outputsize)
                 filename = 'daily_{}_{}.csv'.format(self.outputsize, script)
                 
                 response = requests.get(url)
@@ -114,7 +137,7 @@ class classDownloadData(Toplevel):
     def downloadSMA(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=20&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=SMA&syself.mbol={}&interval=daily&time_period=20&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'SMA_20_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -130,7 +153,7 @@ class classDownloadData(Toplevel):
             self.update_idletasks()"""
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=10&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=SMA&syself.mbol={}&interval=daily&time_period=10&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'SMA_10_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -148,7 +171,7 @@ class classDownloadData(Toplevel):
     def downloadEMA(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=EMA&symbol={}&interval=daily&time_period=20&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=EMA&syself.mbol={}&interval=daily&time_period=20&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'EMA_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -166,7 +189,7 @@ class classDownloadData(Toplevel):
     def downloadVWAP(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=VWAP&symbol={}&interval=5min&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=VWAP&syself.mbol={}&interval=5min&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'VWAP_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -184,7 +207,7 @@ class classDownloadData(Toplevel):
     def downloadRSI(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=RSI&symbol={}&interval=daily&time_period=20&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=RSI&syself.mbol={}&interval=daily&time_period=20&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'RSI_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -202,7 +225,7 @@ class classDownloadData(Toplevel):
     def downloadSTOCH(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=STOCH&symbol={}&interval=daily&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=STOCH&syself.mbol={}&interval=daily&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'STOCH_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -220,7 +243,7 @@ class classDownloadData(Toplevel):
     def downloadMACD(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=MACD&symbol={}&interval=daily&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=MACD&syself.mbol={}&interval=daily&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'MACD_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -238,7 +261,7 @@ class classDownloadData(Toplevel):
     def downloadAROON(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=AROON&symbol={}&interval=daily&time_period=20&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=AROON&syself.mbol={}&interval=daily&time_period=20&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'AROON_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -256,7 +279,7 @@ class classDownloadData(Toplevel):
     def downloadBBANDS(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=BBANDS&symbol={}&interval=daily&time_period=20&series_type=close&nbdevup=2&nbdevdn=2&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=BBANDS&syself.mbol={}&interval=daily&time_period=20&series_type=close&nbdevup=2&nbdevdn=2&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'BBANDS_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -274,7 +297,7 @@ class classDownloadData(Toplevel):
     def downloadADX(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=ADX&symbol={}&interval=daily&time_period=20&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=ADX&syself.mbol={}&interval=daily&time_period=20&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'ADX_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -298,58 +321,84 @@ class classDownloadData(Toplevel):
 
     def btnDownloadFull(self):
         self.outputsize = 'full'
+        self.bisfulldownload = True
         self.btnDownload()
 
 
     def btnDownload(self):
-        """self.progressbar['value'] = 10
-        self.progressbar.update_idletasks() 
-        self.downloadQuoteEndPoint(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
         self.progressbar['value'] = 20
         self.progressbar.update_idletasks() 
-        time.sleep(60)
-        self.downloadIntra(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
-        self.progressbar['value'] = 30
-        self.progressbar.update_idletasks() 
-        time.sleep(60)
-        self.downloadDaily(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
-        self.progressbar['value'] = 40
-        self.progressbar.update_idletasks() 
-        time.sleep(60)
-        self.downloadSMA(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
-        self.progressbar['value'] = 50
-        self.progressbar.update_idletasks() 
-        time.sleep(60)
-        self.downloadEMA(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
-        self.progressbar['value'] = 60
-        self.progressbar.update_idletasks() 
-        time.sleep(60)
-        self.downloadVWAP(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
-        self.progressbar['value'] = 70
-        self.progressbar.update_idletasks() 
-        time.sleep(60)
-        self.downloadRSI(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
-        self.progressbar['value'] = 80
-        self.progressbar.update_idletasks() 
-        time.sleep(60)
-        self.downloadSTOCH(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
-        self.progressbar['value'] = 90
-        self.progressbar.update_idletasks() 
-        time.sleep(60)"""
-        self.downloadMACD(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
-        self.progressbar['value'] = 95
-        self.progressbar.update_idletasks() 
-        time.sleep(60)
-        self.downloadAROON(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
-        self.progressbar['value'] = 96
-        self.progressbar.update_idletasks() 
-        """time.sleep(60)
-        self.downloadBBANDS(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
-        self.progressbar['value'] = 97
-        self.progressbar.update_idletasks() 
-        time.sleep(60)
-        self.downloadADX(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
-        self.progressbar['value'] = 100"""
+        if(self.bisfulldownload or self.Item0.get()):
+            self.downloadDaily(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
+            self.progressbar['value'] = 30
+            self.progressbar.update_idletasks() 
+            time.sleep(60)
+
+        if(self.bisfulldownload or self.Item1.get()):
+            self.downloadIntra(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
+            self.progressbar['value'] = 40
+            self.progressbar.update_idletasks() 
+            time.sleep(60)
+        
+        if(self.bisfulldownload or self.Item2.get()):
+            self.downloadSMA(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
+            self.progressbar['value'] = 50
+            self.progressbar.update_idletasks() 
+            time.sleep(60)
+        
+        if(self.bisfulldownload or self.Item3.get()):
+            self.downloadVWAP(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
+            self.progressbar['value'] = 70
+            self.progressbar.update_idletasks() 
+            time.sleep(60)
+       
+        if(self.bisfulldownload or self.Item4.get()):
+            self.downloadRSI(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
+            self.progressbar['value'] = 80
+            self.progressbar.update_idletasks() 
+            time.sleep(60)
+
+        if(self.bisfulldownload or self.Item5.get()):
+            self.downloadADX(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
+            self.progressbar['value'] = 10
+            self.progressbar.update_idletasks() 
+            time.sleep(60)
+
+        if(self.bisfulldownload or self.Item6.get()):
+            self.downloadSTOCH(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
+            self.progressbar['value'] = 90
+            self.progressbar.update_idletasks() 
+            time.sleep(60)
+        
+        if(self.bisfulldownload or self.Item7.get()):
+            self.downloadMACD(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
+            self.progressbar['value'] = 95
+            self.progressbar.update_idletasks() 
+            time.sleep(60)
+
+        if(self.bisfulldownload or self.Item8.get()):
+            self.downloadAROON(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
+            self.progressbar['value'] = 96
+            self.progressbar.update_idletasks() 
+            time.sleep(60)
+
+        if(self.bisfulldownload or self.Item9.get()):
+            self.downloadBBANDS(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
+            self.progressbar['value'] = 97
+            self.progressbar.update_idletasks() 
+            time.sleep(60)
+
+        if(self.bisfulldownload or self.Item10.get()):
+            self.downloadEMA(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
+            self.progressbar['value'] = 60
+            self.progressbar.update_idletasks() 
+            time.sleep(60)
+
+        if(self.bisfulldownload or self.Item11.get()):
+            self.downloadQuoteEndPoint(['HDFC.BSE', 'LT.BSE', 'BAJFINANCE.BSE', 'AAPL'])
+            self.progressbar['value'] = 100
+            self.progressbar.update_idletasks() 
+
 
     def btnDownloadMF(self):
         #http://portal.amfiindia.com/DownloadNAVHistoryReport_Po.aspx?frmdt=01-Apr-2020
@@ -369,12 +418,12 @@ class classDownloadData(Toplevel):
         input()
 
     def btnDownloadSelected(self):
-        currselection = self.graph_select_combo.current()
-        print(currselection)
+        self.outputsize = 'full'
+        self.bisfulldownload = False
+        self.btnDownload()
 
-        #self.graph_select_combo.
 
 
 if __name__ == "__main__":
-    obj1 = classDownloadData(argFolder='E:\python_projects\PortfolioManager\ScriptData')
+    obj1 = classDownloadData(argFolder='E:\downloaded')
     input()
