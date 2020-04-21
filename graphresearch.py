@@ -50,6 +50,7 @@ class classAllGraphs(Toplevel):
         #self.ax = [None, None, None, None, None, None, None, None, None]
         #for i in range(9):
         self.ax = self.f.add_subplot(1, 1, 1)
+        self.output_canvas.mpl_connect('pick_event', self.OnPick)
         #self.ax[i] = self.f.add_axes(self.ax[i])
 
         self.frame1 = ttk.Frame(self, borderwidth=5, relief="sunken")
@@ -575,6 +576,11 @@ class classAllGraphs(Toplevel):
         if(curr_selection >= 0):
             self.script = self.searchTuple[0].values[curr_selection][0]
 
+    def OnPick(self, event):
+        currentartist = event.artist
+        if( currentartist.get_gid() == 0):
+            msgbx.showinfo('DailyVsSMA', 'DailyVsSMA')
+
     def DrawPoints(self, argAxes, argSourceDF, argFilterRange, argPlotFieldName, 
             argCurrGraph):
         dfEvery10 = argSourceDF.iloc[::argFilterRange, :]
@@ -587,7 +593,11 @@ class classAllGraphs(Toplevel):
 
     def LoadData(self, argCurrGraph):
         try:
+            self.root.configure(cursor='wait')
+            self.root.update()
+
             if(self.IsGraphDrawn(argCurrGraph) == True):
+                msgbx.showerror('Show Graph Error', 'Graph already shown')
                 return
 
             if(self.bool_test):
@@ -606,7 +616,7 @@ class classAllGraphs(Toplevel):
 
                 dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
                 #self.l1, = self.ax.plot(dfdata['4. close'], label='Close', gid=argCurrGraph)
-                self.ax.plot(dfdata['4. close'], label='Close', gid=argCurrGraph, marker='D', markersize = 5, markevery=10)
+                self.ax.plot(dfdata['4. close'], label='Close', gid=argCurrGraph, marker='D', markersize = 3, markevery=10, picker=5)
                 self.DrawPoints(self.ax, dfdata, 10, '4. close', argCurrGraph)
                 """dfEvery10 = dfdata.iloc[::10, :]
                 for antcounter, txt in enumerate(dfEvery10['4. close']):
@@ -626,7 +636,7 @@ class classAllGraphs(Toplevel):
                                                 outputsize=strsize)
                 #self.l2, = self.ax.plot(dfdata['4. close'], label='Intra-day', gid=argCurrGraph)
                 dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
-                self.ax.plot(dfdata['4. close'], label='Intra-day', gid=argCurrGraph, marker='D', markersize = 5, markevery=10)
+                self.ax.plot(dfdata['4. close'], label='Intra-day', gid=argCurrGraph, marker='D', markersize = 3, markevery=10, picker=5)
                 self.DrawPoints(self.ax, dfdata, 10, '4. close', argCurrGraph)
                 """#return rows after every 10 counts
                 dfEvery10 = dfdata.iloc[::10, :]
@@ -645,7 +655,7 @@ class classAllGraphs(Toplevel):
                                             series_type=self.series_type_combo_text3.get())
                 #self.l3, = self.ax.plot(dfdata['SMA'], label='SMA', gid=argCurrGraph)
                 dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
-                self.ax.plot(dfdata['SMA'], label='SMA', gid=argCurrGraph, marker='D', markersize = 5, markevery=10)
+                self.ax.plot(dfdata['SMA'], label='SMA', gid=argCurrGraph, marker='D', markersize = 3, markevery=10, picker=5)
                 self.DrawPoints(self.ax, dfdata, 10, 'SMA', argCurrGraph)
             elif(argCurrGraph == 3): #VWAP
                 if(self.bool_test):
@@ -654,7 +664,7 @@ class classAllGraphs(Toplevel):
                     dfdata, dfmetadata = ti.get_vwap(symbol=self.script, 
                                             interval=self.interval_combo_text4.get())
                 dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
-                self.ax.plot(dfdata['VWAP'], label='VWAP', gid=argCurrGraph, marker='D', markersize = 5, markevery=10)
+                self.ax.plot(dfdata['VWAP'], label='VWAP', gid=argCurrGraph, marker='D', markersize = 3, markevery=10, picker=5)
                 self.DrawPoints(self.ax, dfdata, 10, 'VWAP', argCurrGraph)
             elif(argCurrGraph == 4): #RSI
                 if(self.bool_test):
@@ -665,7 +675,7 @@ class classAllGraphs(Toplevel):
                                             time_period=int(self.time_period_text5.get()),
                                             series_type=self.series_type_combo_text5.get())
                 dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
-                self.ax.plot(dfdata['RSI'], label='RSI', gid=argCurrGraph, marker='D', markersize = 5, markevery=10)
+                self.ax.plot(dfdata['RSI'], label='RSI', gid=argCurrGraph, marker='D', markersize = 3, markevery=10, picker=5)
                 self.DrawPoints(self.ax, dfdata, 10, 'RSI', argCurrGraph)
             elif(argCurrGraph == 5): #ADX
                 if(self.bool_test):
@@ -675,7 +685,7 @@ class classAllGraphs(Toplevel):
                                             interval=self.interval_combo_text6.get(), 
                                             time_period=int(self.time_period_text6.get()))
                 dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
-                self.ax.plot(dfdata['ADX'], label='ADX', gid=argCurrGraph, marker='D', markersize = 5, markevery=10)
+                self.ax.plot(dfdata['ADX'], label='ADX', gid=argCurrGraph, marker='D', markersize = 3, markevery=10, picker=5)
                 self.DrawPoints(self.ax, dfdata, 10, 'ADX', argCurrGraph)
             elif(argCurrGraph == 6): #STOCH
                 if(self.bool_test):
@@ -689,9 +699,9 @@ class classAllGraphs(Toplevel):
                                             slowkmatype=int(self.slowkmatype_combo_text7.get()), 
                                             slowdmatype=self.slowdmatype_combo_text7.get())
                 dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
-                self.ax.plot(dfdata['SlowK'], label='SlowK Mov Avg', gid=argCurrGraph, marker='D', markersize = 5, markevery=10)
+                self.ax.plot(dfdata['SlowK'], label='SlowK Mov Avg', gid=argCurrGraph, marker='D', markersize = 3, markevery=10, picker=5)
                 self.DrawPoints(self.ax, dfdata, 10, 'SlowK', argCurrGraph)
-                self.ax.plot(dfdata['SlowD'], label='SlowD Mov Avg', gid=argCurrGraph, marker='D', markersize = 5, markevery=10)
+                self.ax.plot(dfdata['SlowD'], label='SlowD Mov Avg', gid=argCurrGraph, marker='D', markersize = 3, markevery=10, picker=5)
                 self.DrawPoints(self.ax, dfdata, 10, 'SlowD', argCurrGraph)
             elif(argCurrGraph == 7): #MACD
                 if(self.bool_test):
@@ -704,11 +714,11 @@ class classAllGraphs(Toplevel):
                                             slowperiod=int(self.slowperiod_text8.get()), 
                                             signalperiod=int(self.signalperiod_text8.get()))
                 dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
-                self.ax.plot(dfdata['MACD_Signal'], label='MACD Signal', gid=argCurrGraph, marker='D', markersize = 5, markevery=10)
+                self.ax.plot(dfdata['MACD_Signal'], label='MACD Signal', gid=argCurrGraph, marker='D', markersize = 3, markevery=10, picker=5)
                 self.DrawPoints(self.ax, dfdata, 10, 'MACD_Signal', argCurrGraph)
-                self.ax.plot(dfdata['MACD'], label='MACD', gid=argCurrGraph, marker='D', markersize = 5, markevery=10)
+                self.ax.plot(dfdata['MACD'], label='MACD', gid=argCurrGraph, marker='D', markersize = 3, markevery=10, picker=5)
                 self.DrawPoints(self.ax, dfdata, 10, 'MACD', argCurrGraph)
-                self.ax.plot(dfdata['MACD_Hist'], label='MACD History', gid=argCurrGraph, marker='D', markersize = 5, markevery=10)
+                self.ax.plot(dfdata['MACD_Hist'], label='MACD History', gid=argCurrGraph, marker='D', markersize = 3, markevery=10, picker=5)
                 self.DrawPoints(self.ax, dfdata, 10, 'MACD_Hist', argCurrGraph)
             elif(argCurrGraph == 8): #AROON
                 if(self.bool_test):
@@ -719,9 +729,9 @@ class classAllGraphs(Toplevel):
                                             time_period=int(self.time_period_text9.get()), 
                                             series_type=self.series_type_combo_text9.get())
                 dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
-                self.ax.plot(dfdata['Aroon Up'], label='Aroon Up', gid=argCurrGraph, marker='D', markersize = 5, markevery=10)
+                self.ax.plot(dfdata['Aroon Up'], label='Aroon Up', gid=argCurrGraph, marker='D', markersize = 3, markevery=10, picker=5)
                 self.DrawPoints(self.ax, dfdata, 10, 'Aroon Up', argCurrGraph)
-                self.ax.plot(dfdata['Aroon Down'], label='Aroon Down', gid=argCurrGraph, marker='D', markersize = 5, markevery=10)
+                self.ax.plot(dfdata['Aroon Down'], label='Aroon Down', gid=argCurrGraph, marker='D', markersize = 3, markevery=10, picker=5)
                 self.DrawPoints(self.ax, dfdata, 10, 'Aroon Down', argCurrGraph)
             elif(argCurrGraph == 9): #BBANDS
                 if(self.bool_test):
@@ -735,11 +745,11 @@ class classAllGraphs(Toplevel):
                                             nbdevdn=int(self.nbdevdn_text10.get()), 
                                             matype=self.matype_combo_text10.get())
                 dfdata = dfdata.loc[dfdata.index[:] >= self.from_date_text.get()]
-                self.ax.plot(dfdata['Real Upper Band'], label='Real Upper Band', gid=argCurrGraph, marker='D', markersize = 5, markevery=10)
+                self.ax.plot(dfdata['Real Upper Band'], label='Real Upper Band', gid=argCurrGraph, marker='D', markersize = 3, markevery=10, picker=5)
                 self.DrawPoints(self.ax, dfdata, 10, 'Real Upper Band', argCurrGraph)
-                self.ax.plot(dfdata['Real Middle Band'], label='Real Middle Band', gid=argCurrGraph, marker='D', markersize = 5, markevery=10)
+                self.ax.plot(dfdata['Real Middle Band'], label='Real Middle Band', gid=argCurrGraph, marker='D', markersize = 3, markevery=10, picker=5)
                 self.DrawPoints(self.ax, dfdata, 10, 'Real Middle Band', argCurrGraph)
-                self.ax.plot(dfdata['Real Lower Band'], label='Real Lower Band', gid=argCurrGraph, marker='D', markersize = 5, markevery=10)
+                self.ax.plot(dfdata['Real Lower Band'], label='Real Lower Band', gid=argCurrGraph, marker='D', markersize = 3, markevery=10, picker=5)
                 self.DrawPoints(self.ax, dfdata, 10, 'Real Lower Band', argCurrGraph)
             elif(argCurrGraph == 10): #candlestick
                 strsize = self.outpusize_combo_text11.get()
@@ -765,6 +775,9 @@ class classAllGraphs(Toplevel):
             msgbx.showerror('Load Data Error', 'Error while loading data-' + str(e))
     
     def btnShowSelectedGraph(self):
+        if(len(self.script) <=0 ):
+            msgbx.showerror('Show Graph - Error', 'Please select a script')
+            return
         currGraph = self.graph_select_combo.current()
         self.LoadData(currGraph)
         #self.PlotGraph(currGraph)
@@ -787,22 +800,29 @@ class classAllGraphs(Toplevel):
                 c.remove()
 
         ####Following block is needed for candlestick bar graphs
+        isbox = False
         for b in self.ax.containers:
             for p in b.patches:
                 if(p.get_gid() == currGraph):
+                    isbox = True
                     p.remove()
+
+        if(isbox == True):
+            del self.ax.containers[0:]
+
+        ####candlestick remove end
         #this will return list of annotations if any
         annotations = [child for child in self.ax.get_children() if isinstance(child, matplotlib.text.Annotation)]
         for t in annotations:
             if(t.get_gid() == currGraph):
                 t.remove()
-        del self.ax.containers[0:]
-        ####candlestick remove end
+        
+        annotations = [child for child in self.ax.get_children() if isinstance(child, matplotlib.text.Annotation)]
 
-        if(len(self.ax.lines) == len(self.ax.containers) == len(annotations)):
+        if(len(self.ax.lines) == len(self.ax.containers) == len(annotations) == 0):
             self.btnClearAllGraph()
         else:    
-            self.ax.grid(True)
+            #self.ax.grid(True)
             self.ax.legend(fontsize='small')
             self.ax.relim()
             self.ax.autoscale_view()
@@ -864,7 +884,7 @@ class classAllGraphs(Toplevel):
         pricesdown = dfScript[dfScript.Close < dfScript.Open]
 
         rect1 = self.ax.bar(pricesup.index,pricesup.Close-pricesup.Open,width,
-                            gid=argCurrGraph, bottom=pricesup.Open,color='g', label='Closed higher')
+                            gid=argCurrGraph, bottom=pricesup.Open,color='g', label='Closed higher', picker=5)
         i = 0
         for eachrec in rect1:
             amttext=''
@@ -890,7 +910,7 @@ class classAllGraphs(Toplevel):
             i += 1
 
         rect2 = self.ax.bar(pricesup.index,pricesup.High-pricesup.Close,width2,
-                            gid=argCurrGraph, bottom=pricesup.Close,color='g')
+                            gid=argCurrGraph, bottom=pricesup.Close,color='g', picker=5)
         i = 0
         for eachrec in rect2:
             if(pricesup.High[i] != pricesup.Close[i]):
@@ -901,7 +921,7 @@ class classAllGraphs(Toplevel):
             i += 1
         
         rect3 = self.ax.bar(pricesup.index,pricesup.Low-pricesup.Open,width2,
-                            gid=argCurrGraph, bottom=pricesup.Open,color='g')
+                            gid=argCurrGraph, bottom=pricesup.Open,color='g', picker=5)
         i = 0
         for eachrec in rect3:
             if(pricesup.Low[i] != pricesup.Open[i]):
@@ -912,7 +932,7 @@ class classAllGraphs(Toplevel):
             i += 1
 
         rect4 = self.ax.bar(pricesdown.index,pricesdown.Close-pricesdown.Open,width,
-                        gid=argCurrGraph, bottom=pricesdown.Open,color='black', label='Closed lower')
+                        gid=argCurrGraph, bottom=pricesdown.Open,color='black', label='Closed lower', picker=5)
         i = 0
         for eachrec in rect4:
             amttext=''
@@ -937,7 +957,7 @@ class classAllGraphs(Toplevel):
             i += 1
 
         rect5 = self.ax.bar(pricesdown.index,pricesdown.High-pricesdown.Open,width2,
-                        gid=argCurrGraph, bottom=pricesdown.Open,color='black')
+                        gid=argCurrGraph, bottom=pricesdown.Open,color='black', picker=5)
         i = 0
         for eachrec in rect5:
             if(pricesdown.High[i] != pricesdown.Open[i]):
@@ -948,7 +968,7 @@ class classAllGraphs(Toplevel):
             i+=1
 
         rect6 = self.ax.bar(pricesdown.index,pricesdown.Low-pricesdown.Close,width2, 
-                    gid=argCurrGraph, bottom=pricesdown.Close,color='black')
+                    gid=argCurrGraph, bottom=pricesdown.Close,color='black', picker=5)
         i = 0
         for eachrec in rect6:
             if(pricesdown.Low[i] != pricesdown.Close[i]):
@@ -958,7 +978,7 @@ class classAllGraphs(Toplevel):
             i+=1
 
 if __name__ == "__main__":
-    obj1 = classAllGraphs(argistestmode=True, argkey='XXXX', argscript='HDFC.BSE', argmenucalled=False, arggraphid='4')
+    obj1 = classAllGraphs(argistestmode=True, argkey='XXXX', argscript='HDFC.BSE', argmenucalled=False, arggraphid=4)
     obj1.InitializeWindow()
     obj2 = classAllGraphs(argistestmode=True, argkey='XXXX', argmenucalled=True)
     obj2.InitializeWindow()
