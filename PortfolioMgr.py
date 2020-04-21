@@ -115,6 +115,7 @@ class PortfolioManager:
         self.root.config(menu=self.menu)
         # add file menu
         self.file_menu=Menu(self.menu, tearoff=0)
+        self.file_menu.add_command(label="New Portfolio", underline = 0, command=self.menuNewPortfolio)
         self.file_menu.add_command(label="Open Portfolio", underline = 0, command=self.menuOpenPortfolio)
         self.file_menu.add_command(label="Save Portfolio", underline = 0, command=self.menuSavePortfolio)
         self.file_menu.add_separator()
@@ -176,12 +177,12 @@ class PortfolioManager:
         #self.POSrightclickmenuDailyVsSMA = 5
 
         self.POSrightclickmenuIntraDay = BooleanVar(False)
-        self.popup_menu_righclick.add_checkbutton(label="Intra-day closing Vs 20 SMA", onvalue=True, offvalue=False, variable=self.POSrightclickmenuIntraDay, command=self.rightclickmenuIntraDay)
+        self.popup_menu_righclick.add_checkbutton(label="Intra-day", onvalue=True, offvalue=False, variable=self.POSrightclickmenuIntraDay, command=self.rightclickmenuIntraDay)
         #self.POSrightclickmenuIntraDay = 6
 
-        self.POSrightclickmenuVWMP=BooleanVar(False)
-        self.popup_menu_righclick.add_checkbutton(label="Volume WMA", onvalue=True, offvalue=False, variable=self.POSrightclickmenuVWMP, command=self.rightclickmenuVWMP)
-        #self.POSrightclickmenuVWMP=7
+        self.POSrightclickmenuVWAP=BooleanVar(False)
+        self.popup_menu_righclick.add_checkbutton(label="Volume Weighted Avg Price", onvalue=True, offvalue=False, variable=self.POSrightclickmenuVWAP, command=self.rightclickmenuVWAP)
+        #self.POSrightclickmenuVWAP=7
 
         self.POSrightclickmenuRSI= BooleanVar(False)
         self.popup_menu_righclick.add_checkbutton(label="RSI", onvalue=True, offvalue=False, variable=self.POSrightclickmenuRSI, command=self.rightclickmenuRSI)
@@ -576,7 +577,7 @@ class PortfolioManager:
         self.POSrightclickmenuRSI.set(False)
         self.POSrightclickmenuADX.set(False)
         self.POSrightclickmenuStochasticOscillator.set(False)
-        self.POSrightclickmenuVWMP.set(False)
+        self.POSrightclickmenuVWAP.set(False)
 
     # Method to bind & unbind the mouse move & mouse click events in plot area
     # Called from setAxesCommonConfig when graphctr = 1 to bind the events
@@ -698,7 +699,9 @@ class PortfolioManager:
                     self.dfIntra, aapl_meta_data = self.ts.get_intraday(symbol=script_name, interval='5min')
 
             self.dfIntra=self.dfIntra.sort_index(axis=0, ascending=False)
-
+            latestdt = self.dfIntra.index[0]
+            latestdt = str(str(latestdt.year) + '-' + str(latestdt.month) + '-' + str(latestdt.day) + ' 00:00:00')
+            self.dfIntra = self.dfIntra.loc[self.dfIntra.index[:] >= latestdt]            
             # Visualization
             self.ax[1].clear()
             self.ax[1] = self.f.add_subplot(self.dictgraphmenu[1]['m2'][0], self.dictgraphmenu[1]['m2'][1], self.graphctr, gid=1, visible=True, label='Intra-Day')#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
@@ -710,14 +713,14 @@ class PortfolioManager:
             msgbx.showerror("Error", "Error in IntraDay: " + str(e))
             self.POSrightclickmenuIntraDay.set(self.reverseMenutick(self.POSrightclickmenuIntraDay))
 
-    def rightclickmenuVWMP(self):
+    def rightclickmenuVWAP(self):
         script_name = self.output_tree.get_parent_item()
         if(len(script_name) <=0):
             msgbx.showwarning("Warning", "Please select valid row")
-            self.POSrightclickmenuVWMP.set(self.reverseMenutick(self.POSrightclickmenuVWMP))
+            self.POSrightclickmenuVWAP.set(self.reverseMenutick(self.POSrightclickmenuVWAP))
             return
 
-        if(self.POSrightclickmenuVWMP.get() == False):
+        if(self.POSrightclickmenuVWAP.get() == False):
             self.clearandresetGraphs(2, 'm3')
             self.setFigureCommonConfig(script_name)
             return
@@ -729,6 +732,10 @@ class PortfolioManager:
                 self.dfVWMP, meta_vwap = self.ti.get_vwap(symbol=script_name)
             
             self.dfVWMP=self.dfVWMP.sort_index(axis=0, ascending=False)
+            latestdt = self.dfVWMP.index[0]
+            latestdt = str(str(latestdt.year) + '-' + str(latestdt.month) + '-' + str(latestdt.day) + ' 00:00:00')
+            self.dfVWMP = self.dfVWMP.loc[self.dfVWMP.index[:] >= latestdt]            
+
             # Visualization
             self.ax[2].clear()
             #self.ax[2].set_visible(True)
@@ -740,7 +747,7 @@ class PortfolioManager:
             self.setFigureCommonConfig(script_name)
         except Exception as e:
             msgbx.showerror("Error", "Error in VWAP: " + str(e))
-            self.POSrightclickmenuVWMP.set(self.reverseMenutick(self.POSrightclickmenuVWMP))
+            self.POSrightclickmenuVWAP.set(self.reverseMenutick(self.POSrightclickmenuVWAP))
 
     def rightclickmenuRSI(self):
         script_name = self.output_tree.get_parent_item()
@@ -778,7 +785,7 @@ class PortfolioManager:
             self.setFigureCommonConfig(script_name)
         except Exception as e:
             msgbx.showerror("Error", "Error in RSI: " + str(e))
-            self.POSrightclickmenuVWMP.set(self.reverseMenutick(self.POSrightclickmenuVWMP))
+            self.POSrightclickmenuVWAP.set(self.reverseMenutick(self.POSrightclickmenuVWAP))
 
     def rightclickmenuADX(self):
         script_name = self.output_tree.get_parent_item()
@@ -1094,6 +1101,10 @@ class PortfolioManager:
         # File open menu handler
         # the file will be in following format
         #exchange:scriptname,Purchase Price=###.##,Purchase Date=YYYY-MM-DD,Purchase Qty=##.##,Commission Paid=##.##,Cost of Investment=####.##
+
+    """Method - menuNewPortfolio"""
+    def menuNewPortfolio(self):
+        self.resetExisting()
 
     """Method - menuOpenPortfolio
         Opens a valid portfolio file"""
