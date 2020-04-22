@@ -142,24 +142,24 @@ class classGetQuote(Toplevel):
         self.btn_cancel.grid_configure(row=2, column=15, padx=5, pady=5)
 
         self.frame2.grid_configure(row=1, column=0, columnspan=7, rowspan=3, sticky=(N, S, E, W), padx=5, pady=5)
-        self.open_label.grid_configure(row=1, column=0)#, sticky='NE')
-        self.open_val_label.grid_configure(row=1, column=1)#, columnspan=2, sticky='NW')
-        self.high_label.grid_configure(row=1, column=3)#, columnspan=2, sticky='NE')
-        self.high_val_label.grid_configure(row=1, column=4)#, sticky='NW')
-        self.low_label.grid_configure(row=1, column=6)#, columnspan=2, sticky='NE')
-        self.low_val_label.grid_configure(row=1, column=7)#,sticky='NW')
-        self.price_label.grid_configure(row=2, column=0)#, sticky='NE')
-        self.price_val_label.grid_configure(row=2, column=1)#, columnspan=2, sticky='NW')
-        self.volume_label.grid_configure(row=2, column=3)#, columnspan=2, sticky='NE')
-        self.volume_val_label.grid_configure(row=2, column=4)#, sticky='NW')
-        self.latesttradingday_label.grid_configure(row=2, column=6)#,columnspan=2, sticky='NE')
-        self.latesttradingday_val_label.grid_configure(row=2, column=7)#, sticky='NW')
-        self.prevclose_label.grid_configure(row=3, column=0)#, sticky='NE')
-        self.prevclose_val_label.grid_configure(row=3, column=1)#, columnspan=2, sticky='NW')
-        self.change_label.grid_configure(row=3, column=3)#, columnspan=2, sticky='NE')
-        self.change_val_label.grid_configure(row=3, column=4)#, sticky='NW')
-        self.changepct_label.grid_configure(row=3, column=6)#, columnspan=2, sticky='NE')
-        self.changepct_val_label.grid_configure(row=3, column=7)#, sticky='NW')
+        self.open_label.grid_configure(row=1, column=0, sticky='E')
+        self.open_val_label.grid_configure(row=1, column=1, padx=35, sticky='W')#, columnspan=2, sticky='NW')
+        self.high_label.grid_configure(row=1, column=3,  sticky='E')#, columnspan=2)
+        self.high_val_label.grid_configure(row=1, column=4, padx=35, sticky='W')#, sticky='NW')
+        self.low_label.grid_configure(row=1, column=6, sticky='E')#, columnspan=2, sticky='NE')
+        self.low_val_label.grid_configure(row=1, column=7, padx=35, sticky='W')#,sticky='NW')
+        self.price_label.grid_configure(row=2, column=0, sticky='E')#, sticky='NE')
+        self.price_val_label.grid_configure(row=2, column=1, padx=35, sticky='W')#, columnspan=2, sticky='NW')
+        self.volume_label.grid_configure(row=2, column=3, sticky='E')#, columnspan=2, sticky='NE')
+        self.volume_val_label.grid_configure(row=2, column=4, padx=35, sticky='W')#, sticky='NW')
+        self.latesttradingday_label.grid_configure(row=2, column=6, sticky='E')#,columnspan=2, sticky='NE')
+        self.latesttradingday_val_label.grid_configure(row=2, column=7, padx=35, sticky='W')#, sticky='NW')
+        self.prevclose_label.grid_configure(row=3, column=0, sticky='E')#, sticky='NE')
+        self.prevclose_val_label.grid_configure(row=3, column=1, padx=35, sticky='W')#, columnspan=2, sticky='NW')
+        self.change_label.grid_configure(row=3, column=3, sticky='E')#, columnspan=2, sticky='NE')
+        self.change_val_label.grid_configure(row=3, column=4, padx=35, sticky='W')#, sticky='NW')
+        self.changepct_label.grid_configure(row=3, column=6, sticky='E')#, columnspan=2, sticky='NE')
+        self.changepct_val_label.grid_configure(row=3, column=7, padx=35, sticky='W')#, sticky='NW')
 
         self.output_canvas.get_tk_widget().grid(row=5, column=0, columnspan=17, sticky=(N, E, W, S))
         self.toolbar_frame.grid(row=6, column=0, columnspan=17, rowspan=1, sticky=(N, E, W, S))
@@ -259,7 +259,7 @@ class classGetQuote(Toplevel):
         if(curr_selection >= 0):
             self.script = self.searchTuple[0].values[curr_selection][0]
             dnewscript = dict()
-            dnewscript = classAddNewModifyScript(master=self, argisadd=True, argscript=self.script, argkey=self.key).show()
+            dnewscript = classAddNewModifyScript(master=self, argisadd=True, argscript=self.script, argPurchasePrice=self.price_val_label.cget('text'), argkey=self.key).show()
             # returns dictionary - {'Symbol': 'LT.BSE', 'Price': '1000', 'Date': '2020-02-22', 'Quantity': '10', 'Commission': '1', 'Cost': '10001.0'}
             if((dnewscript != None) and (len(dnewscript['Symbol']) >0)):
                 stock_name = dnewscript['Symbol']
@@ -315,7 +315,7 @@ class classGetQuote(Toplevel):
                 self.focus_force()
                 return
 
-            if(self.bool_test):
+            if(self.bool_test == False):
                 ts = TimeSeries(self.key, output_format='pandas')
                 ti = TechIndicators(self.key, output_format='pandas')
 
@@ -468,9 +468,11 @@ class classGetQuote(Toplevel):
         self.dfdailyts=self.dfdailyts.rename(columns={'1. open':'Open', '2. high':'High', '3. low':'Low', '4. close':'Close', '5. volume':'Volume'})
                 #Add new columns
 
-    #if __name__ == "__main__":
-        #obj = BackTestSMA('XXXX', 'BSE:HDFC', str(date.today()), '2020-02-10', 5, 10)
-        #obj.getScriptDataFromTree()
-        #obj.getData()
-        #obj.plotgraphs()
-        #input()
+if __name__ == "__main__":
+    obj = classGetQuote(master=None, argkey='XXXX', argscript="", argoutputtree=None, argIsTest=True)
+    obj.show()
+    #obj = BackTestSMA('XXXX', 'BSE:HDFC', str(date.today()), '2020-02-10', 5, 10)
+    #obj.getScriptDataFromTree()
+    #obj.getData()
+    #obj.plotgraphs()
+    #input()

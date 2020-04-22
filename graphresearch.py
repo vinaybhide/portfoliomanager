@@ -42,6 +42,14 @@ class classAllGraphs(Toplevel):
         except ValueError:
             dself.fromdt = self.fromdt.replace(year=self.fromdt.year-1, day=self.fromdt.day-1)
 
+        self.menu= Menu(master=self)
+        self.popup_ongraph = Menu(self.menu, tearoff=0)
+        self.popup_ongraph.add_command(label="Selected Graph: ")        
+        self.popup_ongraph.add_separator()
+        self.popup_ongraph.add_command(label="Clear Graph", command=self.OnClearGraph)        
+        self.popup_ongraph.add_command(label="Analysis", command=self.OnAnalysis)        
+
+        self.event = None
 
         self.f = Figure(figsize=(12.63,8), dpi=100, facecolor='w', edgecolor='k', tight_layout=True, linewidth=0.5)
         self.output_canvas=FigureCanvasTkAgg(self.f, master=self)
@@ -576,10 +584,25 @@ class classAllGraphs(Toplevel):
         if(curr_selection >= 0):
             self.script = self.searchTuple[0].values[curr_selection][0]
 
+    def OnAnalysis(self):
+        return
+    
+    def OnClearGraph(self):
+        self.btnClearSelectedGraph()
+        return
+    
     def OnPick(self, event):
-        currentartist = event.artist
+        self.event = event
+        currentartist = self.event.artist
+        self.graph_select_combo.current(currentartist.get_gid())
+        self.graph_select_combo.update_idletasks()
+        
+        #self.popup_ongraph.entrycget(0, 'label')
+        self.popup_ongraph.entryconfigure(0, label='Selected Graph-' + self.graph_select_combo_text.get())
+        self.popup_ongraph.post(event.guiEvent.x_root, event.guiEvent.y_root)
+        """currentartist = event.artist
         if( currentartist.get_gid() == 0):
-            msgbx.showinfo('DailyVsSMA', 'DailyVsSMA')
+            msgbx.showinfo('DailyVsSMA', 'DailyVsSMA')"""
 
     def DrawPoints(self, argAxes, argSourceDF, argFilterRange, argPlotFieldName, 
             argCurrGraph):
@@ -593,9 +616,6 @@ class classAllGraphs(Toplevel):
 
     def LoadData(self, argCurrGraph):
         try:
-            self.root.configure(cursor='wait')
-            self.root.update()
-
             if(self.IsGraphDrawn(argCurrGraph) == True):
                 msgbx.showerror('Show Graph Error', 'Graph already shown')
                 return
