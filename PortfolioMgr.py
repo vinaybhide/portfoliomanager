@@ -150,6 +150,7 @@ class PortfolioManager:
         self.output_canvas=FigureCanvasTkAgg(self.f, master=self.content)
         self.toolbar_frame=Frame(master=self.root)
         self.toolbar = NavigationToolbar2Tk(self.output_canvas, self.toolbar_frame)
+        self.output_canvas.mpl_connect('pick_event', self.OnPicker)
 
         self.xmouseposition = None
         self.ymouseposition = None
@@ -205,12 +206,18 @@ class PortfolioManager:
         #self.POSrightclickmenuAROON=12
 
         self.POSrightclickmenuBBands= BooleanVar(False)
-        self.popup_menu_righclick.add_checkbutton(label="Bollinger Bands", onvalue=True, offvalue=False, variable=self.POSrightclickmenuBBands, command=self.rightclickmenuBBands)
+        self.bbandmenu = self.popup_menu_righclick.add_checkbutton(label="Bollinger Bands", onvalue=True, offvalue=False, variable=self.POSrightclickmenuBBands, command=self.rightclickmenuBBands)
+        #self.POSrightclickmenuBBands=13
+
+        self.popup_menu_righclick.add_separator()
+
+        self.popup_menu_righclick.add_command(label="Clear All Graphs", underline = 0, command=self.menuClearAllGraphs)
         #self.POSrightclickmenuBBands=13
 
         self.popup_ongraph = Menu(self.menu, tearoff=0)
         self.popup_ongraph.add_command(label="Detail Graph", command=self.OnDetailGraph)
         self.popup_ongraph.add_command(label="Analysis", command=self.OnAnalysis)        
+        self.popup_ongraph.add_command(label="Clear Graph", command=self.OnClearGraph)        
 
         self.output_tree.bind('<Button-3>', self.OnRightClick)
 
@@ -504,6 +511,7 @@ class PortfolioManager:
         try:
             self.ax[argDictIndex].clear()
             self.ax[argDictIndex].set_visible(False)
+            self.f.delaxes(self.ax[argDictIndex])
 
             if(self.graphctr > 1):
                 currdict = self.dictgraphmenu[argDictIndex]
@@ -583,6 +591,7 @@ class PortfolioManager:
     # Called from setAxesCommonConfig when graphctr = 1 to bind the events
     # Called from clearandresetGraphs when graphctr = 1 to unbind
     def mouseClickMoveEnableDisable(self, argbFlag):
+        return
         if(argbFlag == True):
             self.cid_leftclick = self.output_canvas.callbacks.connect('button_press_event', self.on_click_graphs)
             self.cid_leftrelease = self.output_canvas.callbacks.connect('button_release_event', self.on_release_graphs)
@@ -654,9 +663,9 @@ class PortfolioManager:
             self.ax[0].clear()
             #self.ax[0].set_visible(True)
             self.ax[0] = self.f.add_subplot(self.dictgraphmenu[0]['m1'][0], self.dictgraphmenu[0]['m1'][1], self.graphctr, gid=0, visible=True, label='Daily Close Vs SMA')#, title=script_name, label='Daily close price', xlabel='Date', ylabel='Closing price')
-            self.ax[0].plot(self.dfDaily['4. close'], label='Close', gid=0, marker='*', markersize = 5, markevery=5)
+            self.ax[0].plot(self.dfDaily['4. close'], label='Close', gid=0, marker='*', markersize = 5, markevery=5, picker=5)
             #self.ax[0].plot(self.dfDaily['4. close'], 'x', markersize=3)
-            self.ax[0].plot(self.dfSMA.head(sizeofdaily)['SMA'], gid=0, label='20 SMA')
+            self.ax[0].plot(self.dfSMA.head(sizeofdaily)['SMA'], gid=0, label='20 SMA', picker=5)
             self.ax[0].lines[0].set_pickradius(1)
             self.ax[0].lines[1].set_pickradius(2)
 
@@ -705,7 +714,7 @@ class PortfolioManager:
             # Visualization
             self.ax[1].clear()
             self.ax[1] = self.f.add_subplot(self.dictgraphmenu[1]['m2'][0], self.dictgraphmenu[1]['m2'][1], self.graphctr, gid=1, visible=True, label='Intra-Day')#, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
-            self.ax[1].plot(self.dfIntra['4. close'], gid=1, label='Intra-day', marker='x', markersize=5, markevery=5)
+            self.ax[1].plot(self.dfIntra['4. close'], gid=1, label='Intra-day', marker='x', markersize=5, markevery=5, picker = 5)
 
             self.setAxesCommonConfig(1, 'm2', script_name, 'Intra-day')
             self.setFigureCommonConfig(script_name)
@@ -742,7 +751,7 @@ class PortfolioManager:
             self.ax[2] = self.f.add_subplot(self.dictgraphmenu[2]['m3'][0], self.dictgraphmenu[2]['m3'][1], self.graphctr, gid=2, visible=True, label='VWAP')
                 #, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
             sdateyearback = self.getPastDateFromToday(self.LookbackYears)
-            self.ax[2].plot(self.dfVWMP.loc[self.dfVWMP.index[:] >= sdateyearback, 'VWAP'], gid=2,label='VWAP')
+            self.ax[2].plot(self.dfVWMP.loc[self.dfVWMP.index[:] >= sdateyearback, 'VWAP'], gid=2,label='VWAP', picker=5)
             self.setAxesCommonConfig(2, 'm3', script_name, 'Vol Wt Avg Price')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
@@ -778,7 +787,7 @@ class PortfolioManager:
             #twinax = self.ax[3].twinx()
             #color = 'tab:blue'
             sdateyearback = self.getPastDateFromToday(self.LookbackYears)
-            self.ax[3].plot(self.dfRSI.loc[self.dfRSI.index[:] >= sdateyearback, 'RSI'], gid=3,label='RSI')
+            self.ax[3].plot(self.dfRSI.loc[self.dfRSI.index[:] >= sdateyearback, 'RSI'], gid=3,label='RSI', picker=5)
             #twinax.tick_params(axis='y', labelcolor=color)
 
             self.setAxesCommonConfig(3, 'm4', script_name, 'RSI')
@@ -814,7 +823,7 @@ class PortfolioManager:
             self.ax[4] = self.f.add_subplot(self.dictgraphmenu[4]['m5'][0], self.dictgraphmenu[4]['m5'][1], self.graphctr, gid=4, visible=True, label='ADX')
             #, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
             sdateyearback = self.getPastDateFromToday(self.LookbackYears)
-            self.ax[4].plot(self.dfADX.loc[self.dfADX.index[:] >= sdateyearback, 'ADX'], gid=4,label='ADX')
+            self.ax[4].plot(self.dfADX.loc[self.dfADX.index[:] >= sdateyearback, 'ADX'], gid=4,label='ADX', picker=5)
             self.setAxesCommonConfig(4, 'm5', script_name, 'ADX')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
@@ -848,8 +857,8 @@ class PortfolioManager:
             self.ax[5] = self.f.add_subplot(self.dictgraphmenu[5]['m6'][0], self.dictgraphmenu[5]['m6'][1], self.graphctr, gid=5, visible=True, label='STOCH')
             #, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
             sdateyearback = self.getPastDateFromToday(self.LookbackYears)
-            self.ax[5].plot(self.dfStoch.loc[self.dfStoch.index[:] >= sdateyearback, 'SlowK'], 'b-', gid=5, label='SlowK MA')
-            self.ax[5].plot(self.dfStoch.loc[self.dfStoch.index[:] >= sdateyearback, 'SlowD'], 'r-', gid=5, label='SlowD MA')
+            self.ax[5].plot(self.dfStoch.loc[self.dfStoch.index[:] >= sdateyearback, 'SlowK'], 'b-', gid=5, label='SlowK MA', picker=5)
+            self.ax[5].plot(self.dfStoch.loc[self.dfStoch.index[:] >= sdateyearback, 'SlowD'], 'r-', gid=5, label='SlowD MA', picker=5)
             self.setAxesCommonConfig(5, 'm6', script_name, 'Stoch Oscillator')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
@@ -882,9 +891,9 @@ class PortfolioManager:
             self.ax[6] = self.f.add_subplot(self.dictgraphmenu[6]['m7'][0], self.dictgraphmenu[6]['m7'][1], self.graphctr, gid=6, visible=True, label='MACD')
             #, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
             sdateyearback = self.getPastDateFromToday(self.LookbackYears)
-            self.ax[6].plot(self.dfMACD.loc[self.dfMACD.index[:] >= sdateyearback, 'MACD_Signal'], 'r-', gid=6, label='Signal')
-            self.ax[6].plot(self.dfMACD.loc[self.dfMACD.index[:] >= sdateyearback, 'MACD'], 'y-', gid=6, label='MACD')
-            self.ax[6].plot(self.dfMACD.loc[self.dfMACD.index[:] >= sdateyearback, 'MACD_Hist'], 'b-', gid=6, label='History')
+            self.ax[6].plot(self.dfMACD.loc[self.dfMACD.index[:] >= sdateyearback, 'MACD_Signal'], 'r-', gid=6, label='Signal', picker=5)
+            self.ax[6].plot(self.dfMACD.loc[self.dfMACD.index[:] >= sdateyearback, 'MACD'], 'y-', gid=6, label='MACD', picker=5)
+            self.ax[6].plot(self.dfMACD.loc[self.dfMACD.index[:] >= sdateyearback, 'MACD_Hist'], 'b-', gid=6, label='History', picker=5)
             self.setAxesCommonConfig(6, 'm7', script_name, 'MACD')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
@@ -917,8 +926,8 @@ class PortfolioManager:
             self.ax[7] = self.f.add_subplot(self.dictgraphmenu[7]['m8'][0], self.dictgraphmenu[7]['m8'][1], self.graphctr, gid=7, visible=True, label='AROON')
                 #, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
             sdateyearback = self.getPastDateFromToday(self.LookbackYears)
-            self.ax[7].plot(self.dfAROON.loc[self.dfAROON.index[:] >= sdateyearback, 'Aroon Up'], 'r-', gid=7, label='Up')
-            self.ax[7].plot(self.dfAROON.loc[self.dfAROON.index[:] >= sdateyearback, 'Aroon Down'], 'b-', gid=7, label='Down')
+            self.ax[7].plot(self.dfAROON.loc[self.dfAROON.index[:] >= sdateyearback, 'Aroon Up'], 'r-', gid=7, label='Up', picker=5)
+            self.ax[7].plot(self.dfAROON.loc[self.dfAROON.index[:] >= sdateyearback, 'Aroon Down'], 'b-', gid=7, label='Down', picker=5)
             self.setAxesCommonConfig(7, 'm8', script_name, 'Aroon')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
@@ -953,9 +962,9 @@ class PortfolioManager:
             self.ax[8] = self.f.add_subplot(self.dictgraphmenu[8]['m9'][0], self.dictgraphmenu[8]['m9'][1], self.graphctr, gid=8, visible=True, label='BBANDS')
             #, title=script_name, label='Intra-day', xlabel='Date', ylabel='Intra-day close', visible=True)
             sdateyearback = self.getPastDateFromToday(self.LookbackYears)
-            self.ax[8].plot(self.dfBBANDS.loc[self.dfBBANDS.index[:] >= sdateyearback, 'Real Middle Band'], 'r-', gid=8, label='Middle')
-            self.ax[8].plot(self.dfBBANDS.loc[self.dfBBANDS.index[:] >= sdateyearback, 'Real Upper Band'], 'b-', gid=8, label='Upper')
-            self.ax[8].plot(self.dfBBANDS.loc[self.dfBBANDS.index[:] >= sdateyearback, 'Real Lower Band'], 'y-', gid=8, label='Lower')
+            self.ax[8].plot(self.dfBBANDS.loc[self.dfBBANDS.index[:] >= sdateyearback, 'Real Middle Band'], 'r-', gid=8, label='Middle', picker=5)
+            self.ax[8].plot(self.dfBBANDS.loc[self.dfBBANDS.index[:] >= sdateyearback, 'Real Upper Band'], 'b-', gid=8, label='Upper', picker=5)
+            self.ax[8].plot(self.dfBBANDS.loc[self.dfBBANDS.index[:] >= sdateyearback, 'Real Lower Band'], 'y-', gid=8, label='Lower', picker=5)
             self.setAxesCommonConfig(8, 'm9', script_name, 'Bollinger Bands')
             self.setFigureCommonConfig(script_name)
         except Exception as e:
@@ -1177,16 +1186,85 @@ class PortfolioManager:
             self.event = event
             self.popup_ongraph.post(event.guiEvent.x_root, event.guiEvent.y_root)
 
+    def menuClearAllGraphs(self):
+        if(self.POSrightclickmenuDailyVsSMA.get() == True):
+            self.POSrightclickmenuDailyVsSMA.set(False)
+            self.rightclickmenuDailyVsSMA()
+        if(self.POSrightclickmenuIntraDay.get() == True):
+            self.POSrightclickmenuIntraDay.set(False)
+            self.rightclickmenuIntraDay()
+        if(self.POSrightclickmenuVWAP.get() == True):
+            self.POSrightclickmenuVWAP.set(False)
+            self.rightclickmenuVWAP()
+        if(self.POSrightclickmenuRSI.get() == True):
+            self.POSrightclickmenuRSI.set(False)
+            self.rightclickmenuRSI()
+        if(self.POSrightclickmenuADX.get() == True):
+            self.POSrightclickmenuADX.set(False)
+            self.rightclickmenuADX()
+        if(self.POSrightclickmenuStochasticOscillator.get() == True):
+            self.POSrightclickmenuStochasticOscillator.set(False)
+            self.rightclickmenuStochasticOscillator()
+        if(self.POSrightclickmenuMACD.get() == True):
+            self.POSrightclickmenuMACD.set(False)
+            self.rightclickmenuMACD()
+        if(self.POSrightclickmenuAROON.get() == True):
+            self.POSrightclickmenuAROON.set(False)
+            self.rightclickmenuAROON()
+        if(self.POSrightclickmenuBBands.get() == True):
+            self.POSrightclickmenuBBands.set(False)
+            self.rightclickmenuBBands()
+
     def OnAnalysis(self):
         msgbx.showinfo("Analysis", "Analysis")
 
     def OnDetailGraph(self):
         obj = classAllGraphs(master=self.root, argistestmode=self.bool_test, argkey=self.key,
-                    argscript=self.currentScript, argmenucalled=False, arggraphid=self.event.inaxes.get_gid(),
+                    #argscript=self.currentScript, argmenucalled=False, arggraphid=self.event.inaxes.get_gid(),
+                    argscript=self.currentScript, argmenucalled=False, arggraphid=self.event.artist.get_gid(),
                     argoutputtree=self.output_tree)
         obj.InitializeWindow()
 
+    def OnClearGraph(self):
+        currentartist = self.event.artist
+        #self.popup_menu_righclick.event_generate('<<Menu Selected>>', 13)
+        if( currentartist.get_gid() == 0):
+            self.POSrightclickmenuDailyVsSMA.set(self.reverseMenutick(self.POSrightclickmenuDailyVsSMA))
+            self.rightclickmenuDailyVsSMA()
+        elif( currentartist.get_gid() == 1):
+            self.POSrightclickmenuIntraDay.set(self.reverseMenutick(self.POSrightclickmenuIntraDay))
+            self.rightclickmenuIntraDay()
+        elif( currentartist.get_gid() == 2):
+            self.POSrightclickmenuVWAP.set(self.reverseMenutick(self.POSrightclickmenuVWAP))
+            self.rightclickmenuVWAP()
+        elif( currentartist.get_gid() == 3):
+            self.POSrightclickmenuRSI.set(self.reverseMenutick(self.POSrightclickmenuRSI))
+            self.rightclickmenuRSI()
+        elif( currentartist.get_gid() == 4):
+            self.POSrightclickmenuADX.set(self.reverseMenutick(self.POSrightclickmenuADX))
+            self.rightclickmenuADX()
+        elif( currentartist.get_gid() == 5):
+            self.POSrightclickmenuStochasticOscillator.set(self.reverseMenutick(self.POSrightclickmenuStochasticOscillator))
+            self.rightclickmenuStochasticOscillator()
+        elif( currentartist.get_gid() == 6):
+            self.POSrightclickmenuMACD.set(self.reverseMenutick(self.POSrightclickmenuMACD))
+            self.rightclickmenuMACD()
+        elif( currentartist.get_gid() == 7):
+            self.POSrightclickmenuAROON.set(self.reverseMenutick(self.POSrightclickmenuAROON))
+            self.rightclickmenuAROON()
+        elif( currentartist.get_gid() == 8):
+            self.POSrightclickmenuBBands.set(self.reverseMenutick(self.POSrightclickmenuBBands))
+            self.rightclickmenuBBands()
+
+    def OnPicker(self, event):
+        """currentartist = event.artist
+        if( currentartist.get_gid() == 0):
+            msgbx.showinfo('DailyVsSMA', 'DailyVsSMA')"""
+        self.event = event
+        self.popup_ongraph.post(event.guiEvent.x_root, event.guiEvent.y_root)
+
     def on_click_graphs(self, event):
+        return
         self.event = event
         return
         #if event.inaxes is not None:
@@ -1196,10 +1274,12 @@ class PortfolioManager:
     def on_release_graphs(self, event):
         #if event.inaxes is not None:
         #if( (self.xmouseposition == event.x) and (self.ymouseposition == event.y)):
+        return
         if( (self.event.x == event.x) and (self.event.y == event.y)):
             if event.inaxes is not None:
                 self.event = event
                 self.popup_ongraph.post(event.guiEvent.x_root, event.guiEvent.y_root)
+
             """#msgbx.showinfo('If', 'xdata='+str(event.xdata) + '   ydata= ' + str(event.ydata))
                 graphid = -1
                 if(event.inaxes == self.ax[0]):
