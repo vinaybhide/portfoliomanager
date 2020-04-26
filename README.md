@@ -2,14 +2,25 @@
 Pre-requisites for development:
 1. I developed this on Win7 using Python 3.8.2 32-bit on Win 7
 2. Make sure you have PIP (latest version I have used is 3)
+    1. Verify by executing: 
+        pip --version
+    2. If pip isn’t already installed, then first try to bootstrap it from the standard library:
+        python -m ensurepip --default-pip
+    3. Ensure pip is up to date
+        python -m pip install --upgrade pip
 3. install following:
-    pip install alpha_vantage
-    pip install pandas
-    pip install matplotlib
-    pip install tkcalendar
-4. In addition I have used tkinter module for graphics
-
-Program using alpha vantage to manage stock portfolio
+    1. pip install alpha_vantage
+    2. pip install pandas
+    3. pip install matplotlib
+    4. pip install tkcalendar
+4. In addition I have used tkinter module for graphics, which is available as standard library
+5. Before you execute Portfolio Manager
+    1 Create a sub-directory 'scriptdata' in the same folder where you copied the source code (.py files)
+    2. Get developer key from Alpha Vantage website: https://www.alphavantage.co/support/#support
+6. First use of Portfolio Manager
+    1. Use menu 'Help->Add Key & Data Folder' and provide the Alpha Vantage key & path where you want to keep data files
+    2. The folder you specify is used to store CSV files retrieved from Alpha Vantage in 'Test' mode of application
+7. General description of Portfolio Manager application using alpha vantage to manage stock portfolio & do research
 v0.4 - Features as below
    1. File->Save current scripts in tree as portfolio  to a file
    2. File->Open existing portfolio file and render data in tree
@@ -61,3 +72,6 @@ v0.6 - Added test data support via downloaded file for all except get_quote_endp
  v1.0 - All beta features complete
       1. Added consolidated portfolio performance screen
       2. Added Apple stock download to download feature
+ v1.0.1 - Added new menu and dialog for entering alpha vantage key and selecting data file folder used in 'Test' mode
+      1. All classes using Test mode now accept data file folder in their constructor
+      2. TestData class and download data classes are changed to accept folder during runtime

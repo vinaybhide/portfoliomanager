@@ -58,6 +58,7 @@ from testdata import *
 from graphresearch import *
 from downloaddata import *
 from portfoliovaluation import *
+from addaccesskey import *
 
 class PortfolioManager:
     def __init__(self):
@@ -91,7 +92,7 @@ class PortfolioManager:
 
         self.event = None
         self.annotate_visible = False
-        # ******************main program starts******************
+        self.datafolderpath = './scriptdata'
         # Set Alpha Vantage key and create timeseriese and time indicator objects
         #self.key = 'XXXX'
         self.key = 'UV6KQA6735QZKBTV'
@@ -141,6 +142,7 @@ class PortfolioManager:
 
         # add help menu
         self.help_menu=Menu(self.menu, tearoff=0)
+        self.help_menu.add_command(label="Add Key & Data Folder", underline = 0, command=self.menuKeyDataFolder)
         self.help_menu.add_command(label="Mode (Online/Offline)", underline = 0, command=self.menuSetTestMode)
         self.help_menu.add_command(label="Download Data", underline = 0, command=self.menuDownloadData)
         self.menu.add_cascade(label='Help', underline = 0, menu=self.help_menu)
@@ -155,7 +157,7 @@ class PortfolioManager:
         self.xmouseposition = None
         self.ymouseposition = None
 
-        self.output_tree = ScriptTreeView(self.content, self.ts, self.ti, self.f, self.bool_test, self.output_canvas, self.toolbar, selectmode='browse')
+        self.output_tree = ScriptTreeView(self.content, self.ts, self.ti, self.f, self.bool_test, self.output_canvas, self.toolbar, self.datafolderpath, selectmode='browse')
         #self.output_tree.bind('<<TreeviewSelect>>', self.TreeViewSelectionChanged)
 
         self.popup_menu_righclick = Menu(self.menu, tearoff=0)
@@ -350,7 +352,7 @@ class PortfolioManager:
 
     def menuPortfolioPerformance(self):
         obj = PortfolioValuation(master=self.root, argkey=self.key, 
-                    argscripttree=self.output_tree,argIsTest=self.bool_test)
+                    argscripttree=self.output_tree,argIsTest=self.bool_test, argDataFolder=self.datafolderpath)
         obj.ShowPortfolioPerformance()
 
     """ called on right click menu selection """
@@ -362,7 +364,7 @@ class PortfolioManager:
         # Now get the purchase price if available
         holdinvalobj = BackTestSMA(master=self.root, argkey=self.key, argscript=script_name, 
                 argscripttree=self.output_tree, argavgsmall=10, argavglarge=20, arglookbackyears=1,
-                argIsTest=self.bool_test)
+                argIsTest=self.bool_test, argDataFolder=self.datafolderpath)
         holdinvalobj.findScriptPerformance(argShowPerformance=True, argShowCandlestick=True, 
                             argShowMarketData=True, argShowReturns=True)
         holdinvalobj.show()
@@ -377,7 +379,7 @@ class PortfolioManager:
         # Now get the purchase price if available
         holdinvalobj = BackTestSMA(master=self.root, argkey=self.key, argscript=script_name, 
                 argscripttree=self.output_tree, argavgsmall=10, argavglarge=20, arglookbackyears=1,
-                argIsTest=self.bool_test)
+                argIsTest=self.bool_test, argDataFolder=self.datafolderpath)
         holdinvalobj.findScriptPerformance(argShowPerformance=True, argShowCandlestick=False, 
                             argShowMarketData=False, argShowReturns=False)
         holdinvalobj.show()
@@ -392,7 +394,7 @@ class PortfolioManager:
         # Now get the purchase price if available
         holdinvalobj = BackTestSMA(master=self.root, argkey=self.key, argscript=script_name, 
                 argscripttree=self.output_tree, argavgsmall=10, argavglarge=20, arglookbackyears=1,
-                argIsTest=self.bool_test)
+                argIsTest=self.bool_test, argDataFolder=self.datafolderpath)
         holdinvalobj.findScriptPerformance(argShowPerformance=False, argShowCandlestick=True, 
                             argShowMarketData=False, argShowReturns=False)
         holdinvalobj.show()
@@ -407,7 +409,7 @@ class PortfolioManager:
         # Now get the purchase price if available
         holdinvalobj = BackTestSMA(master=self.root, argkey=self.key, argscript=script_name, 
                 argscripttree=self.output_tree, argavgsmall=10, argavglarge=20, arglookbackyears=1,
-                argIsTest=self.bool_test)
+                argIsTest=self.bool_test, argDataFolder=self.datafolderpath)
         holdinvalobj.findScriptPerformance(argShowPerformance=False, argShowCandlestick=False, 
                             argShowMarketData=True, argShowReturns=False)
         holdinvalobj.show()
@@ -422,7 +424,7 @@ class PortfolioManager:
         # Now get the purchase price if available
         holdinvalobj = BackTestSMA(master=self.root, argkey=self.key, argscript=script_name, 
                 argscripttree=self.output_tree, argavgsmall=10, argavglarge=20, arglookbackyears=1,
-                argIsTest=self.bool_test)
+                argIsTest=self.bool_test, argDataFolder=self.datafolderpath)
         holdinvalobj.findScriptPerformance(argShowPerformance=False, argShowCandlestick=False, 
                             argShowMarketData=False, argShowReturns=True)
         holdinvalobj.show()
@@ -431,12 +433,12 @@ class PortfolioManager:
     def menuResearchGraphs(self):
         obj = classAllGraphs(master=self.root, argistestmode=self.bool_test, 
                 argkey=self.key, argscript='', argmenucalled=True, arggraphid=-1, 
-                argoutputtree=self.output_tree)
+                argoutputtree=self.output_tree, argdatafolder=self.datafolderpath)
         obj.InitializeWindow()
 
     # command handler for stock quote button
     def menuGetStockQuote(self):
-        obj = classGetQuote(master=self.root, argoutputtree=self.output_tree, argIsTest=self.bool_test)
+        obj = classGetQuote(master=self.root, argoutputtree=self.output_tree, argIsTest=self.bool_test, argDataFolder=self.datafolderpath)
         obj.show()
         return;
 
@@ -591,18 +593,17 @@ class PortfolioManager:
     # Called from setAxesCommonConfig when graphctr = 1 to bind the events
     # Called from clearandresetGraphs when graphctr = 1 to unbind
     def mouseClickMoveEnableDisable(self, argbFlag):
-        return
         if(argbFlag == True):
-            self.cid_leftclick = self.output_canvas.callbacks.connect('button_press_event', self.on_click_graphs)
-            self.cid_leftrelease = self.output_canvas.callbacks.connect('button_release_event', self.on_release_graphs)
+            #self.cid_leftclick = self.output_canvas.callbacks.connect('button_press_event', self.on_click_graphs)
+            #self.cid_leftrelease = self.output_canvas.callbacks.connect('button_release_event', self.on_release_graphs)
             self.cid_mouse_move = self.output_canvas.callbacks.connect('motion_notify_event', self.on_mouse_move)
         else:
-            if(self.cid_leftclick != None):
-                self.output_canvas.callbacks.disconnect(self.cid_leftclick)
-            self.cid_leftclick = None
-            if(self.cid_leftrelease != None):
-                self.output_canvas.callbacks.disconnect(self.cid_leftrelease)
-            self.cid_leftrelease = None
+            #if(self.cid_leftclick != None):
+            #    self.output_canvas.callbacks.disconnect(self.cid_leftclick)
+            #self.cid_leftclick = None
+            #if(self.cid_leftrelease != None):
+            #    self.output_canvas.callbacks.disconnect(self.cid_leftrelease)
+            #self.cid_leftrelease = None
             self.xmouseposition = None
             self.ymouseposition = None
             if(self.cid_mouse_move != None):
@@ -631,7 +632,7 @@ class PortfolioManager:
         # aapl_data is a pandas dataframe, aapl_meta_data is a dict
         try:
             if self.bool_test:
-                testobj = PrepareTestData(argOutputSize='compact')
+                testobj = PrepareTestData(argFolder=self.datafolderpath, argOutputSize='compact')
                 self.dfDaily = testobj.loadDaily(script_name)
                 if(self.dfSMA.empty):
                     self.dfSMA = testobj.loadSMA(script_name)
@@ -700,7 +701,7 @@ class PortfolioManager:
         # aapl_data is a pandas dataframe, aapl_meta_data is a dict
         try:
             if(self.bool_test == True):
-                testobj = PrepareTestData()
+                testobj = PrepareTestData(argFolder=self.datafolderpath)
                 if(self.dfIntra.empty):
                     self.dfIntra = testobj.loadIntra(script_name)
             else:
@@ -735,7 +736,7 @@ class PortfolioManager:
             return
         try:
             if self.bool_test:
-                testobj = PrepareTestData()
+                testobj = PrepareTestData(argFolder=self.datafolderpath)
                 self.dfVWMP = testobj.loadVWMP(script_name)
             else:
                 self.dfVWMP, meta_vwap = self.ti.get_vwap(symbol=script_name)
@@ -771,7 +772,7 @@ class PortfolioManager:
             return
         try:
             if self.bool_test:
-                testobj = PrepareTestData()
+                testobj = PrepareTestData(argFolder=self.datafolderpath)
                 self.dfRSI = testobj.loadRSI(script_name)
             else:
                 self.dfRSI, meta_rsi = self.ti.get_rsi(symbol=script_name)
@@ -810,7 +811,7 @@ class PortfolioManager:
         
         try:
             if self.bool_test:
-                testobj = PrepareTestData()
+                testobj = PrepareTestData(argFolder=self.datafolderpath)
                 self.dfADX = testobj.loadADX(script_name)
             else:
                 self.dfADX, meta_adx = self.ti.get_adx(symbol=script_name)
@@ -843,7 +844,7 @@ class PortfolioManager:
             return
         try:
             if self.bool_test:
-                testobj = PrepareTestData()
+                testobj = PrepareTestData(argFolder=self.datafolderpath)
                 self.dfStoch = testobj.loadStochasticOscillator(script_name)
             else:
                 self.dfStoch, meta_stoch = self.ti.get_stoch(symbol=script_name, interval='daily',
@@ -878,7 +879,7 @@ class PortfolioManager:
             return
         try:
             if self.bool_test:
-                testobj = PrepareTestData()
+                testobj = PrepareTestData(argFolder=self.datafolderpath)
                 self.dfMACD = testobj.loadMACD(script_name)
             else:
                 self.dfMACD, meta_macd = self.ti.get_macd(symbol=script_name, interval='daily',
@@ -913,7 +914,7 @@ class PortfolioManager:
             return
         try:
             if self.bool_test:
-                testobj = PrepareTestData()
+                testobj = PrepareTestData(argFolder=self.datafolderpath)
                 self.dfAROON = testobj.loadAROON(script_name)
             else:
                 self.dfAROON, meta_aroon = self.ti.get_aroon(symbol=script_name)
@@ -948,7 +949,7 @@ class PortfolioManager:
         
         try:
             if self.bool_test:
-                testobj = PrepareTestData()
+                testobj = PrepareTestData(argFolder=self.datafolderpath)
                 self.dfBBANDS=testobj.loadBBands(script_name)
             else:
                 self.dfBBANDS, meta_bbands = self.ti.get_bbands(symbol=script_name, interval='daily',
@@ -1092,6 +1093,17 @@ class PortfolioManager:
         plt.grid()
         plt.show()
 
+    #allows the user to enter valid key
+    def menuKeyDataFolder(self):
+        result_dict = classAddKey(master=self.root).show()
+        if(len(result_dict) > 0):
+            if(result_dict['key'] != ''):
+                self.key = result_dict['key']
+                self.ts = TimeSeries(self.key, output_format='pandas')
+                self.ti = TechIndicators(self.key, output_format='pandas')
+            if(result_dict['folder'] != ''):
+                self.datafolder = result_dict['folder']
+
     def menuDownloadData(self):
         obj1 = classDownloadData(argKey=self.key)
 
@@ -1136,7 +1148,7 @@ class PortfolioManager:
                             try:
                                 symbolname = str(arg_list[0])
                                 if(self.bool_test):
-                                    testobj = PrepareTestData()
+                                    testobj = PrepareTestData(argFolder=self.datafolderpath)
                                     dfstockname = testobj.GetQuoteEndPoint(symbolname)
                                 else:
                                     dfstockname, meta_data = self.ts.get_quote_endpoint(symbolname)
@@ -1222,7 +1234,7 @@ class PortfolioManager:
         obj = classAllGraphs(master=self.root, argistestmode=self.bool_test, argkey=self.key,
                     #argscript=self.currentScript, argmenucalled=False, arggraphid=self.event.inaxes.get_gid(),
                     argscript=self.currentScript, argmenucalled=False, arggraphid=self.event.artist.get_gid(),
-                    argoutputtree=self.output_tree)
+                    argoutputtree=self.output_tree, argdatafolder=self.datafolderpath)
         obj.InitializeWindow()
 
     def OnClearGraph(self):

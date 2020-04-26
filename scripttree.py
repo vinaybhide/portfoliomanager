@@ -23,7 +23,7 @@ from testdata import *
 from mfdownloaddata import MFData
 
 class ScriptTreeView(ttk.Treeview):
-    def __init__(self, master=None, argTS = None, argTI = None, argFigure = None, argTestMode = None, argCanvas = None, argToolbar = None, **kw):
+    def __init__(self, master=None, argTS = None, argTI = None, argFigure = None, argTestMode = None, argCanvas = None, argToolbar = None, argDataFolder = './scriptdata', **kw):
         super().__init__(master=master, **kw)
         
         self.bleftBtnReleased = False
@@ -36,7 +36,7 @@ class ScriptTreeView(ttk.Treeview):
         self.graph_toolbar = argToolbar
         self.btestmode = argTestMode
         self.HOLDINGVAL = '_HOLDINGVAL_'
-
+        self.datafolderpath = argDataFolder
         #self.script_tree = ttk.Treeview(master, selectmode='browse')
         #self.bind('<Double 1>', self.OnTreeDoubleClick)
         #self.bind('<Button 1>', self.OnTreeSingleClick)
@@ -310,7 +310,7 @@ class ScriptTreeView(ttk.Treeview):
         try:
             if(argPriceDf.empty == True):
                 if (self.btestmode==True):
-                    testobj = PrepareTestData()
+                    testobj = PrepareTestData(argFolder=self.datafolderpath)
                     dfstockname = testobj.GetQuoteEndPoint(argStockName)
                 else:
                     dfstockname, meta_data = self.ts.get_quote_endpoint(argStockName)

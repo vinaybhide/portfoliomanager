@@ -44,11 +44,12 @@ from testdata import *
 
 class BackTestSMA(Toplevel):
     def __init__(self, master=None, argkey=None, argscript=None, argscripttree=None, 
-                argavgsmall=None, argavglarge=None, arglookbackyears=1, argIsTest=False):
+                argavgsmall=None, argavglarge=None, arglookbackyears=1, argIsTest=False, argDataFolder='./scriptdata'):
         Toplevel.__init__(self, master=master)
         self.key = argkey
         self.script = argscript
         self.graphctr=1
+        self.datafolderpath = argDataFolder
 
         self.wm_state(newstate='zoomed') #maximize window, this works only for Win OS
         self.wm_title("Performance graphs: " + self.script)
@@ -564,6 +565,73 @@ class BackTestSMA(Toplevel):
 
         self.setAxesCommonConfig(ax4, 'Returns - ' + self.script, 'Returns')
 
+    """ findScriptPerformance
+        This method will execute Alpha
+    """
+    def findScriptPerformance(self, argShowPerformance=True, argShowCandlestick=True, 
+                            argShowMarketData=True, argShowReturns=True):
+        self.getScriptDataFromTree()
+        if(self.dfholdingvalues.shape[0] < 1):
+            msgbx.showwarning("Script Performance", "No script data found. Please add your purchased scripts before doing performance calculations")
+            return
+
+        try:
+            if(self.bool_test):
+                testobj = PrepareTestData(argFolder=self.datafolderpath, argOutputSize='full')
+                self.dfScript = testobj.loadDaily(self.script)
+                #self.dfSMAShort = testobj.loadSMA(self.script, self.avgsmall)
+                #self.dfSMAShort = testobj.loadSMA(self.script, self.avglarge)
+            else:
+                self.dfScript, meta_data = self.ts.get_daily(symbol=self.script, outputsize='full')
+                #self.dfSMAShort, meta_data = self.ti.get_sma(self.script, interval='daily', time_period=self.avgsmall, series_type='close')
+                #self.dfSMALong, meta_data = self.ti.get_sma(self.script, interval='daily', time_period=self.avglarge, series_type='close')
+            
+            self.dfScript.sort_index(axis=0, ascending=False, inplace=True)
+            #self.dfSMAShort.sort_index(axis=0, ascending=False, inplace=True)
+            #self.dfSMALong.sort_index(axis=0, ascending=False, inplace=True)
+        except Exception as error:
+            msgbx.showerror("Error in findScriptPerformance()", str(error))
+            return
+        self.changeColNameTypeofDailyTS()
+        self.setCurrentValInMarketDF()
+        self.addPerformance()
+        #self.plotPerformanceGraphTS()
+        sumofgraphs = int(argShowPerformance) + int(argShowCandlestick) + int(argShowMarketData) + int(argShowReturns)
+        nrows=1
+        ncols=1
+        nindex=1
+        if(sumofgraphs == 4):
+            nrows=ncols=2
+            nindex=1
+        elif(sumofgraphs == 3):
+            nrows=1
+            ncols=3
+            nindex=1
+        elif(sumofgraphs == 2):
+            nrows=2
+            ncols=1
+            nindex=1
+        elif(sumofgraphs == 1):
+            nrows=1
+            ncols=1
+            nindex=1
+        if(argShowPerformance):
+            self.plotPortfolioPerformanceAX(nrows, ncols, nindex)
+            nindex +=1
+        if(argShowCandlestick):
+            self.plotMarketDataCandleSticks(nrows, ncols, nindex)
+            nindex +=1
+        if(argShowMarketData):
+            self.plotMarketData(nrows, ncols, nindex)
+            nindex +=1
+        if(argShowReturns):
+            self.plotScriptReturns(nrows, ncols, nindex)
+            nindex +=1
+
+        self.f.set_tight_layout(True)
+        self.output_canvas.draw()
+        self.toolbar.update()
+
     def NOTUSED_plotPerformanceGraphTS(self):
         #first 3 & 1 means we want to show 3 graphs in 1 column
         #last 1 indicates the sequence number of the current graph
@@ -663,74 +731,6 @@ class BackTestSMA(Toplevel):
         #ax4.set_ylabel('Daily Returns')
         self.setAxesCommonConfig(ax4, 'Daily returns - ' + self.script, 'Daily Returns')
         plt.show()
-
-    """ findScriptPerformance
-        This method will execute Alpha
-    """
-    def findScriptPerformance(self, argShowPerformance=True, argShowCandlestick=True, 
-                            argShowMarketData=True, argShowReturns=True):
-        self.getScriptDataFromTree()
-        if(self.dfholdingvalues.shape[0] < 1):
-            msgbx.showwarning("Script Performance", "No script data found. Please add your purchased scripts before doing performance calculations")
-            return
-
-        try:
-            if(self.bool_test):
-                testobj = PrepareTestData(argOutputSize='full')
-                self.dfScript = testobj.loadDaily(self.script)
-                #self.dfSMAShort = testobj.loadSMA(self.script, self.avgsmall)
-                #self.dfSMAShort = testobj.loadSMA(self.script, self.avglarge)
-            else:
-                self.dfScript, meta_data = self.ts.get_daily(symbol=self.script, outputsize='full')
-                #self.dfSMAShort, meta_data = self.ti.get_sma(self.script, interval='daily', time_period=self.avgsmall, series_type='close')
-                #self.dfSMALong, meta_data = self.ti.get_sma(self.script, interval='daily', time_period=self.avglarge, series_type='close')
-            
-            self.dfScript.sort_index(axis=0, ascending=False, inplace=True)
-            #self.dfSMAShort.sort_index(axis=0, ascending=False, inplace=True)
-            #self.dfSMALong.sort_index(axis=0, ascending=False, inplace=True)
-        except Exception as error:
-            msgbx.showerror("Error in findScriptPerformance()", str(error))
-            return
-        self.changeColNameTypeofDailyTS()
-        self.setCurrentValInMarketDF()
-        self.addPerformance()
-        #self.plotPerformanceGraphTS()
-        sumofgraphs = int(argShowPerformance) + int(argShowCandlestick) + int(argShowMarketData) + int(argShowReturns)
-        nrows=1
-        ncols=1
-        nindex=1
-        if(sumofgraphs == 4):
-            nrows=ncols=2
-            nindex=1
-        elif(sumofgraphs == 3):
-            nrows=1
-            ncols=3
-            nindex=1
-        elif(sumofgraphs == 2):
-            nrows=2
-            ncols=1
-            nindex=1
-        elif(sumofgraphs == 1):
-            nrows=1
-            ncols=1
-            nindex=1
-        if(argShowPerformance):
-            self.plotPortfolioPerformanceAX(nrows, ncols, nindex)
-            nindex +=1
-        if(argShowCandlestick):
-            self.plotMarketDataCandleSticks(nrows, ncols, nindex)
-            nindex +=1
-        if(argShowMarketData):
-            self.plotMarketData(nrows, ncols, nindex)
-            nindex +=1
-        if(argShowReturns):
-            self.plotScriptReturns(nrows, ncols, nindex)
-            nindex +=1
-
-        self.f.set_tight_layout(True)
-        self.output_canvas.draw()
-        self.toolbar.update()
-
 
         """ Method - getData(self): Not used
             get_daily_adjusted returns data and metadata in DF
@@ -1151,9 +1151,9 @@ class BackTestSMA(Toplevel):
         plt.suptitle(self.script)
         plt.show()
 
-    #if __name__ == "__main__":
-        #obj = BackTestSMA('XXXX', 'BSE:HDFC', str(date.today()), '2020-02-10', 5, 10)
-        #obj.getScriptDataFromTree()
-        #obj.getData()
-        #obj.plotgraphs()
-        #input()
+if __name__ == "__main__":
+    obj = BackTestSMA('XXXX', 'BSE:HDFC', str(date.today()), '2020-02-10', 5, 10)
+    obj.getScriptDataFromTree()
+    obj.getData()
+    obj.plotgraphs()
+    input()

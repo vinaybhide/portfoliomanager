@@ -120,7 +120,7 @@ class classAddNewModifyScript(Toplevel):
             self.cost_label.configure(text = 'Cost of purchase ((Price*Quantity) + Commision): ' + str(self.cost))
         except Exception as e:
             msgbx.showerror("Error", e)        
-            return
+            self.btn_calc_cost.focus_force()
             
     def btnAddScript(self):
         if((self.isadd == True) and (len(self.script) <=0)):
@@ -131,7 +131,7 @@ class classAddNewModifyScript(Toplevel):
                 self.destroy()
             else:
                 msgbx.showerror("Error", "Please select script to add!")
-                self.focus_force()
+                self.search_symbol_combo.focus_force()
                 return
         else:
             self.iscancel = False
@@ -179,8 +179,7 @@ class classAddNewModifyScript(Toplevel):
 
         except Exception as e:
             msgbx.showerror("Search Symbol Error", str(e))
-            self.focus_force()
-            return
+            self.search_symbol_combo.focus_force()
 
     def commandEnterKey(self, event):
         self.btnSearchScript()

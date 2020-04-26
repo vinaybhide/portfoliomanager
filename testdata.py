@@ -9,11 +9,10 @@ from alpha_vantage.timeseries import TimeSeries
 from alpha_vantage.techindicators import TechIndicators
 
 class PrepareTestData():
-    def __init__(self, argFolder='E:\\python_projects\\PortfolioManager\\ScriptData\\', argOutputSize='compact'):
+    def __init__(self, argFolder='./scriptdata', argOutputSize='compact'):
         super().__init__()
-        self.folder = argFolder
+        self.folder = argFolder + '/'
         self.outputsize = argOutputSize.lower()
-        return
     
     def loadDaily(self, argScript):
         try:
@@ -267,8 +266,7 @@ class PrepareTestData():
         ts = TimeSeries('XXXX', output_format='pandas')
         padf, pameta = ts.get_daily('HDFC.BSE')
 
-"""if __name__ == "__main__":
+if __name__ == "__main__":
     obj = PrepareTestData()
     obj.loadDaily('HDFC.BSE')
     input()
-"""

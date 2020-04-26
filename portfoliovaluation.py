@@ -22,12 +22,13 @@ from testdata import *
 
 class PortfolioValuation(Toplevel):
     def __init__(self, master=None, argkey=None, argscript='None', argscripttree=None, 
-                argIsTest=False):
+                argIsTest=False, argDataFolder='./scriptdata'):
         Toplevel.__init__(self, master=master)
         self.key = argkey
         self.script = argscript
         self.graphctr=1
-
+        self.datafolderpath = argDataFolder
+        
         self.wm_state(newstate='zoomed') #maximize window, this works only for Win OS
         self.wm_title("Portfolio valuation")
 
@@ -172,7 +173,7 @@ class PortfolioValuation(Toplevel):
     def LoadDailyPrice(self, argDF):
         try:
             if(self.bool_test):
-                testobj = PrepareTestData(argOutputSize='full')
+                testobj = PrepareTestData(argFolder=self.datafolderpath, argOutputSize='full')
                 tempDF = testobj.loadDaily(argDF.loc[0, 'ScriptName'])
             else:
                 tempDF, meta_data = self.ts.get_daily(symbol=argDF.loc[0, 'ScriptName'], outputsize='full')
