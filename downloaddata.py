@@ -10,7 +10,7 @@ import pandas as pd
 from pandas import DataFrame
 
 class classDownloadData(Toplevel):
-    def __init__(self, master=None, argKey= 'XXXX', argFolder='E:\python_projects\PortfolioManager\ScriptData', argMFdownloadFromDays=90, **kw):
+    def __init__(self, master=None, argKey= 'XXXX', argFolder='./ScriptData', argMFdownloadFromDays=90, **kw):
         super().__init__(master=master, **kw)
 
         self.wm_title("Download Data")
@@ -83,7 +83,7 @@ class classDownloadData(Toplevel):
     def downloadQuoteEndPoint(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&syself.mbol={}&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={}&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'global_quote_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -92,7 +92,7 @@ class classDownloadData(Toplevel):
                 time.sleep(60)
                 print(filename)
         except Exception as e:
-            print(str(e))
+            msgbx.showerror('Error in downloadQuoteEndPoint', str(e))
             """self.progressbar['value'] = 10
             self.progressbar.update()
             self.update_idletasks()"""
@@ -100,7 +100,7 @@ class classDownloadData(Toplevel):
     def downloadIntra(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&syself.mbol={}&interval=5min&apikey={}&outputsize={}&datatype=csv'.format(script, self.key, self.outputsize)
+                url = 'https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol={}&interval=5min&apikey={}&outputsize={}&datatype=csv'.format(script, self.key, self.outputsize)
                 filename = 'intraday_5min_{}_{}.csv'.format(self.outputsize, script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -118,7 +118,7 @@ class classDownloadData(Toplevel):
     def downloadDaily(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&syself.mbol={}&apikey={}&outputsize={}&datatype=csv'.format(script, self.key, self.outputsize)
+                url = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={}&apikey={}&outputsize={}&datatype=csv'.format(script, self.key, self.outputsize)
                 filename = 'daily_{}_{}.csv'.format(self.outputsize, script)
                 
                 response = requests.get(url)
@@ -137,7 +137,7 @@ class classDownloadData(Toplevel):
     def downloadSMA(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=SMA&syself.mbol={}&interval=daily&time_period=20&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=20&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'SMA_20_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -153,7 +153,7 @@ class classDownloadData(Toplevel):
             self.update_idletasks()"""
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=SMA&syself.mbol={}&interval=daily&time_period=10&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=10&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'SMA_10_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -171,7 +171,7 @@ class classDownloadData(Toplevel):
     def downloadEMA(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=EMA&syself.mbol={}&interval=daily&time_period=20&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=EMA&symbol={}&interval=daily&time_period=20&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'EMA_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -189,7 +189,7 @@ class classDownloadData(Toplevel):
     def downloadVWAP(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=VWAP&syself.mbol={}&interval=5min&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=VWAP&symbol={}&interval=5min&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'VWAP_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -207,7 +207,7 @@ class classDownloadData(Toplevel):
     def downloadRSI(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=RSI&syself.mbol={}&interval=daily&time_period=20&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=RSI&symbol={}&interval=daily&time_period=20&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'RSI_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -225,7 +225,7 @@ class classDownloadData(Toplevel):
     def downloadSTOCH(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=STOCH&syself.mbol={}&interval=daily&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=STOCH&symbol={}&interval=daily&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'STOCH_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -243,7 +243,7 @@ class classDownloadData(Toplevel):
     def downloadMACD(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=MACD&syself.mbol={}&interval=daily&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=MACD&symbol={}&interval=daily&series_type=close&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'MACD_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -261,7 +261,7 @@ class classDownloadData(Toplevel):
     def downloadAROON(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=AROON&syself.mbol={}&interval=daily&time_period=20&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=AROON&symbol={}&interval=daily&time_period=20&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'AROON_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -279,7 +279,7 @@ class classDownloadData(Toplevel):
     def downloadBBANDS(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=BBANDS&syself.mbol={}&interval=daily&time_period=20&series_type=close&nbdevup=2&nbdevdn=2&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=BBANDS&symbol={}&interval=daily&time_period=20&series_type=close&nbdevup=2&nbdevdn=2&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'BBANDS_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -297,7 +297,7 @@ class classDownloadData(Toplevel):
     def downloadADX(self, arglistscriptname):
         try:
             for script in arglistscriptname:
-                url = 'https://www.alphavantage.co/query?function=ADX&syself.mbol={}&interval=daily&time_period=20&apikey={}&datatype=csv'.format(script, self.key)
+                url = 'https://www.alphavantage.co/query?function=ADX&symbol={}&interval=daily&time_period=20&apikey={}&datatype=csv'.format(script, self.key)
                 filename = 'ADX_{}.csv'.format(script)
                 response = requests.get(url)
                 with open(os.path.join(self.folder, filename), 'wb') as f:
@@ -425,5 +425,5 @@ class classDownloadData(Toplevel):
 
 
 if __name__ == "__main__":
-    obj1 = classDownloadData(argFolder='E:\downloaded')
+    obj1 = classDownloadData()
     input()

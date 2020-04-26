@@ -21,7 +21,7 @@ from addnewmodifyscript import classAddNewModifyScript
 from testdata import *
 
 class classGetQuote(Toplevel):
-    def __init__(self, master=None, argkey='XXXX', argscript="", argoutputtree=None, argIsTest=False):
+    def __init__(self, master=None, argkey='XXXX', argscript="", argoutputtree=None, argIsTest=False, argDataFolder='./scriptdata'):
         Toplevel.__init__(self, master=master)
         self.wm_state(newstate='zoomed')
         #self.wm_resizable(width=False, height=False)
@@ -29,6 +29,7 @@ class classGetQuote(Toplevel):
         self.script = argscript
         self.output_tree = argoutputtree
         self.bool_test = argIsTest
+        self.datafolderpath = argDataFolder
         #graph filter params
         self.pastdate = str(date.today())
         self.graphctr=1
@@ -205,7 +206,7 @@ class classGetQuote(Toplevel):
                 self.script = self.searchTuple[0].values[curr_selection][0]
             else:
                 msgbx.showerror('Get Quote', 'No script selected')
-                self.focus_force()
+                self.search_symbol_combo.focus_force()
                 return
             ts = TimeSeries(self.key, output_format='pandas')
             quote_tuple=ts.get_quote_endpoint(symbol=self.script)
@@ -222,7 +223,7 @@ class classGetQuote(Toplevel):
             self.changepct_val_label.configure(text=quote_tuple[0].values[0][9])
         except Exception as e:
             msgbx.showerror("Get Quote Error", str(e))
-            #self.focus_force()
+            self.search_symbol_combo.focus_force()
             return
    
     #def commandSearchSymbol(self):
@@ -246,7 +247,7 @@ class classGetQuote(Toplevel):
 
         except Exception as e:
             msgbx.showerror("Search Symbol Error", str(e))
-            #self.focus_force()
+            self.search_symbol_combo.focus_force()
             return
 
     def commandEnterKey(self, event):
@@ -274,8 +275,7 @@ class classGetQuote(Toplevel):
                 #   dnewscript['Quantity'], dnewscript['Commission'], dnewscript['Cost'])
         else:
             msgbx.showerror('Get Quote', 'No script selected')
-            #self.focus_force()
-            return
+        self.btn_add_script.focus_force()
 
     def btnGetDailyClose(self):
         self.dateFilter(1)
@@ -324,7 +324,7 @@ class classGetQuote(Toplevel):
             #daily
             if(self.bdaily.get() == True):
                 if(self.bool_test):
-                    testobj = PrepareTestData(argOutputSize='full')
+                    testobj = PrepareTestData(argFolder=self.datafolderpath, argOutputSize='full')
                     dfdata = testobj.loadDaily(self.script)
                 else:
                     dfdata, dfmetadata = ts.get_daily(symbol=self.script, outputsize='full')
@@ -342,7 +342,7 @@ class classGetQuote(Toplevel):
             #intraday
             if(self.bintra.get() == True):
                 if(self.bool_test):
-                    testobj = PrepareTestData(argOutputSize='full')
+                    testobj = PrepareTestData(argFolder=self.datafolderpath, argOutputSize='full')
                     dfdata = testobj.loadIntra(self.script)
                 else:
                     dfdata, dfmetadata = ts.get_intraday(symbol=self.script, outputsize='full')
@@ -355,7 +355,7 @@ class classGetQuote(Toplevel):
             #sma
             if(self.bsma.get() == True):
                 if(self.bool_test):
-                    testobj = PrepareTestData()
+                    testobj = PrepareTestData(argFolder=self.datafolderpath)
                     dfdata = testobj.loadSMA(self.script)
                 else:
                     dfdata, dfmetadata = ti.get_sma(symbol=self.script)
@@ -370,7 +370,7 @@ class classGetQuote(Toplevel):
             #ema
             if(self.bema.get() == True):
                 if(self.bool_test):
-                    testobj = PrepareTestData()
+                    testobj = PrepareTestData(argFolder=self.datafolderpath)
                     dfdata = testobj.loadEMA(self.script)
                 else:
                     dfdata, dfmetadata = ti.get_ema(symbol=self.script)
@@ -384,7 +384,7 @@ class classGetQuote(Toplevel):
             #vwap returns one col = VWAP
             if(self.bvwap.get() == True):
                 if(self.bool_test):
-                    testobj = PrepareTestData()
+                    testobj = PrepareTestData(argFolder=self.datafolderpath)
                     dfdata = testobj.loadVWMP(self.script)
                 else:
                     dfdata, dfmetadata = ti.get_vwap(symbol=self.script)
@@ -398,7 +398,7 @@ class classGetQuote(Toplevel):
             #macd returns 3 cols. For ex, "MACD_Signal": "-4.7394", "MACD": "-7.7800", "MACD_Hist": "-3.0406"
             if(self.bmacd.get() == True):
                 if(self.bool_test):
-                    testobj = PrepareTestData()
+                    testobj = PrepareTestData(argFolder=self.datafolderpath)
                     dfdata = testobj.loadMACD(self.script)
                 else:
                     dfdata, dfmetadata = ti.get_macd(symbol=self.script)
@@ -414,7 +414,7 @@ class classGetQuote(Toplevel):
             #rsi returns one col RSI
             if(self.brsi.get() == True):
                 if(self.bool_test):
-                    testobj = PrepareTestData()
+                    testobj = PrepareTestData(argFolder=self.datafolderpath)
                     dfdata = testobj.loadRSI(self.script)
                 else:
                     dfdata, dfmetadata = ti.get_rsi(symbol=self.script)
@@ -428,7 +428,7 @@ class classGetQuote(Toplevel):
             #adx returns one col ADX
             if(self.badx.get() == True):
                 if(self.bool_test):
-                    testobj = PrepareTestData()
+                    testobj = PrepareTestData(argFolder=self.datafolderpath)
                     dfdata = testobj.loadADX(self.script)
                 else:
                     dfdata, dfmetadata = ti.get_adx(symbol=self.script)
@@ -442,7 +442,7 @@ class classGetQuote(Toplevel):
             #aroon returns two cols for ex "Aroon Up": "28.5714", "Aroon Down": "100.0000"
             if(self.baroon.get() == True):
                 if(self.bool_test):
-                    testobj = PrepareTestData()
+                    testobj = PrepareTestData(argFolder=self.datafolderpath)
                     dfdata = testobj.loadAROON(self.script)
                 else:
                     dfdata, dfmetadata = ti.get_aroon(symbol=self.script)
@@ -461,7 +461,8 @@ class classGetQuote(Toplevel):
 
         except Exception as e:
             msgbx.showerror("Graph error", str(e))
-            return
+
+        self.btn_get_daily_close.focus_force()
 
     def changeColNameTypeofDailyTS(self):
         #rename columns

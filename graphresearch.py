@@ -19,7 +19,7 @@ from testdata import *
 
 class classAllGraphs(Toplevel):
     def __init__(self, master=None, argistestmode=False, argkey='XXXX', argscript='', 
-        argmenucalled=False, arggraphid=-1, argoutputtree=None, **kw):
+        argmenucalled=False, arggraphid=-1, argoutputtree=None, argdatafolder='./scriptdata', **kw):
         super().__init__(master=master, **kw)
         self.wm_state(newstate='zoomed')
         self.wm_title("Graphs")
@@ -35,7 +35,8 @@ class classAllGraphs(Toplevel):
         else:
             self.graphid = arggraphid + 1
         self.output_tree = argoutputtree
-
+        self.datafolderpath = argdatafolder
+        
         try:
             self.fromdt = date.today()
             self.fromdt = self.fromdt.replace(year=self.fromdt.year-1)
@@ -533,8 +534,8 @@ class classAllGraphs(Toplevel):
 
         except Exception as e:
             msgbx.showerror("Search Symbol Error", str(e))
-            #self.focus_force()
-            return
+        
+        self.btn_search_script.focus_force()
 
     def commandEnterKey(self, event):
         self.btnSearchScript()
@@ -621,14 +622,14 @@ class classAllGraphs(Toplevel):
                 return
 
             if(self.bool_test):
-                testobj = PrepareTestData()
+                testobj = PrepareTestData(argFolder=self.datafolderpath)
             else:
                 ts = TimeSeries(self.key, output_format='pandas')
                 ti = TechIndicators(self.key, output_format='pandas')
             if(argCurrGraph == 0): #load daiy
                 strsize = self.outpusize_combo_text1.get()
                 if(self.bool_test):
-                    testobjDaily = PrepareTestData(argOutputSize=strsize)
+                    testobjDaily = PrepareTestData(argFolder=self.datafolderpath, argOutputSize=strsize)
                     dfdata = testobjDaily.loadDaily(self.script)
                 else:
                     dfdata, dfmetadata = ts.get_daily(symbol=self.script,
@@ -648,7 +649,7 @@ class classAllGraphs(Toplevel):
             elif(argCurrGraph == 1): #intra
                 strsize = self.outpusize_combo_text2.get()
                 if(self.bool_test):
-                    testobjIntra = PrepareTestData(argOutputSize=strsize)                    
+                    testobjIntra = PrepareTestData(argFolder=self.datafolderpath, argOutputSize=strsize)                    
                     dfdata = testobjIntra.loadIntra(self.script)
                 else:
                     dfdata, dfmetadata = ts.get_intraday(symbol=self.script, 
@@ -774,7 +775,7 @@ class classAllGraphs(Toplevel):
             elif(argCurrGraph == 10): #candlestick
                 strsize = self.outpusize_combo_text11.get()
                 if(self.bool_test):
-                    testobjCandle = PrepareTestData(argOutputSize=strsize)
+                    testobjCandle = PrepareTestData(argFolder=self.datafolderpath, argOutputSize=strsize)
                     dfdata = testobjCandle.loadDaily(self.script)
                 else:
                     dfdata, dfmetadata = ts.get_daily(symbol=self.script,
