@@ -20,7 +20,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 import warnings
 from datetime import date
 from testdata import *
-from mfdownloaddata import MFData
 
 class ScriptTreeView(ttk.Treeview):
     def __init__(self, master=None, argTS = None, argTI = None, argFigure = None, argTestMode = None, argCanvas = None, argToolbar = None, argDataFolder = './scriptdata', **kw):
@@ -444,7 +443,7 @@ class ScriptTreeView(ttk.Treeview):
                 return False
             return True
 
-    def get_mf_quote(self, argHoldingIID = '', argStockName='', argPriceDf=DataFrame(), *args):
+    """def get_mf_quote(self, argHoldingIID = '', argStockName='', argPriceDf=DataFrame(), *args):
         #global bool_test
         dfstockname = DataFrame()
         listselfcol = list()
@@ -514,4 +513,4 @@ class ScriptTreeView(ttk.Treeview):
         values_list=list((dfstockname.values[0:dfcolumnlen])[0])
         #commenting for heirarchy
         #self.print_values(values_list)
-        self.output_counter = self.print_values(argHoldingIID, heading_list, values_list, listselfcol, listselfval, self.output_counter)
+        self.output_counter = self.print_values(argHoldingIID, heading_list, values_list, listselfcol, listselfval, self.output_counter)"""
