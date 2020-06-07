@@ -18,10 +18,12 @@ from addnewmodifyscript import classAddNewModifyScript
 from testdata import *
 
 class classAllGraphs(Toplevel):
-    def __init__(self, master=None, argistestmode=False, argkey='XXXX', argscript='', 
+    def __init__(self, master=None, argistestmode=False, argkey=None, argscript='', 
         argmenucalled=False, arggraphid=-1, argoutputtree=None, argdatafolder='./scriptdata', **kw):
-        super().__init__(master=master, **kw)
-        self.wm_state(newstate='zoomed')
+        #super().__init__(master=master, **kw)
+        Toplevel.__init__(self, master=master)
+        #self.wm_state(newstate='zoomed')
+        self.wm_state(newstate='normal')
         self.wm_title("Graphs")
 
         self.wm_protocol("WM_DELETE_WINDOW", self.OnClose)

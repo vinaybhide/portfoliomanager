@@ -11,6 +11,7 @@ from tkinter import messagebox as msgbx
 from tkinter.filedialog import *
 from datetime import date
 from tkcalendar import Calendar, DateEntry
+import os.path as ospath
 
 class classAddKey(Toplevel):
     def __init__(self, master=None):
@@ -25,15 +26,26 @@ class classAddKey(Toplevel):
         self.configure(padx=5, pady=10)
         self.iscancel = False
 
+        if(ospath.isfile('key_folder.txt')):
+            with open('key_folder.txt', 'r') as f:
+                d = f.read().split(',')
+                f.close()
+            prev_key = d[0]
+            prev_folder = d[1]
+        else:
+            prev_key = ''
+            prev_folder = ''
+
+
         self.frame1 = ttk.Frame(self, borderwidth=5, relief="sunken") #, width=200, height=100)
 
         # Now create purchase price entry
         self.key_label = ttk.Label(self.frame1, text='Enter your key: ')
-        self.key_text = StringVar(value='XXXX')
+        self.key_text = StringVar(value=prev_key)
         self.key_entry = ttk.Entry(self.frame1, textvariable=self.key_text, width=40)
 
         self.datafolder_label = ttk.Label(self.frame1, text='Folder for source data: ')
-        self.datafolder_text = StringVar(value='')
+        self.datafolder_text = StringVar(value=prev_folder)
         self.datafolder_entry = ttk.Entry(self.frame1, textvariable=self.datafolder_text, width=40, state='read')
         self.btn_add_datafolder = ttk.Button(self.frame1, text="Browse & Select Folder", command=self.btnDataFolder)
 
@@ -73,6 +85,9 @@ class classAddKey(Toplevel):
         self.key_entry.focus_force()
         self.wait_window()
         if(self.iscancel == False):
+            with open('key_folder.txt', 'w') as f:
+                f.write(f'{self.key_text.get()},{self.datafolder_text.get()}')
+                f.close()
             return {'key':self.key_text.get(), 'folder':self.datafolder_text.get(),}
 
         return {}

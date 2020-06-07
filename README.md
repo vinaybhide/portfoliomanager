@@ -3,28 +3,28 @@
       2. Allows developers to leverage AlphaVantage to fetch real time global stock data
       3. Uses matplotlib to plot various graphs that user can use to research their stock holdings
       4. Leverages tkinter to show meu options, Tree View, right/left click operations, mouse hover operation
-      5. Various show/hide techniques for plots
+      5. Various show/hide techniques for plots, along with showing data while hovering mouse on graph line
 # Pre-requisites for development:
       1. I developed this on Win7 using Python 3.8.2 32-bit on Win 7
       2. Make sure you have PIP (latest version I have used is 3)
       1. Verify by executing: 
             pip --version
-      2. If pip isn’t already installed, then first try to bootstrap it from the standard library:
+      2. NOT REQUIRED (ONLY ADVANCE USERS) : If pip isn’t already installed, then first try to bootstrap it from the standard library:
             python -m ensurepip --default-pip
       3. Ensure pip is up to date
             python -m pip install --upgrade pip
       3. install following:
-      1. pip install alpha_vantage
-      2. pip install pandas
-      3. pip install matplotlib
-      4. pip install tkcalendar
+         3.1.  pip install alpha_vantage
+         3.2.  pip install pandas
+         3.3.  pip install matplotlib
+         3.4.  pip install tkcalendar
       4. In addition I have used tkinter module for graphics, which is available as standard library
       5. Before you execute Portfolio Manager
-      1 Create a sub-directory 'scriptdata' in the same folder where you copied the source code (.py files)
-      2. Get developer key from Alpha Vantage website: https://www.alphavantage.co/support/#support
+         5.1   Create a sub-directory 'scriptdata' in the same folder where you copied the source code (.py files)
+         5.2.  Get developer key from Alpha Vantage website: https://www.alphavantage.co/support/#support
       6. First use of Portfolio Manager
-      1. Use menu 'Help->Add Key & Data Folder' and provide the Alpha Vantage key & path where you want to keep data files
-      2. The folder you specify is used to store CSV files retrieved from Alpha Vantage in 'Test' mode of application
+         6.1.  Use menu 'Help->Add Key & Data Folder' and provide the Alpha Vantage key & path where you want to keep data files
+         6.2.  The folder you specify is used to store CSV files retrieved from Alpha Vantage in 'Test' mode of application
       7. General description of Portfolio Manager application using alpha vantage to manage stock portfolio & do research
 
 # Features available as of 1-June-2020 in version 1.0.1
@@ -72,20 +72,21 @@
    3. Help->Download data (That will be used in Off-line mode)
       1. Currently you can download data of three BSE stocks/scripts and Apple from NASDAQ
       2. TO DO: Add a search combo to allows search of a script and then use that script for download
+      
       # Right click menu on Tree items
-    1. Mouse right click->Delete, Deletes the currently selected portfolio entry from tree only. Data is not deleted from opened portfolio file
-   11. Mouse right click->Modify,  Modify selected script from tree. 
-      1. Opens a popup dialog
-      2. You can change the quantity, rate, commission etc. Based on the values the cost of investment will be updated
-      3. This will also take current market price and update all current value field in Tree
-   5. Mouse right click->Script Performance. 
-      1. Opens a submenu allowing you to select which graph you want to see
-      2. Currently following graphs are shown for the selected script
+   1. Mouse right click->Delete, Deletes the currently selected portfolio entry from tree only. Data is not deleted from opened portfolio file
+   2. Mouse right click->Modify,  Modify selected script from tree. 
+      2.1. Opens a popup dialog
+      2.2. You can change the quantity, rate, commission etc. Based on the values the cost of investment will be updated
+      2.3. This will also take current market price and update all current value field in Tree
+   3. Mouse right click->Script Performance. 
+      3.1. Opens a submenu allowing you to select which graph you want to see
+      3.2. Currently following graphs are shown for the selected script
             - Script performance: Plots datewise datewise value of the script
             - Candlestick OHLC: plots traditional candlestick graph, shpwing datewise comparison of Open, High, Low and close prices
             - Buy & Sell predication: Uses back testing algorithm to plot graph showing when to buy & sell
             - Returns: For the selected period this will plot daily and cumulative returns graph
-      3. You can see other Tech Indicator graphs by selecting the specific one that you want to see
+      3.3. You can see other Tech Indicator graphs by selecting the specific one that you want to see
             - Hover mouse on the plotted line to see the data at that opint
             - Use Right/Left click on the line to see Detail Graph, Analysis Graphs or you can clear the current graph
 # Development History

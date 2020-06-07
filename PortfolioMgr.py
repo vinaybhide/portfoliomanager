@@ -49,6 +49,7 @@ from matplotlib import interactive
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import warnings
 from datetime import date
+import os.path as ospath
 
 from scripttree import *
 from addnewmodifyscript import *
@@ -92,10 +93,19 @@ class PortfolioManager:
 
         self.event = None
         self.annotate_visible = False
-        self.datafolderpath = './scriptdata'
         # Set Alpha Vantage key and create timeseriese and time indicator objects
         #self.key = 'XXXX'
-        self.key = 'UV6KQA6735QZKBTV'
+
+        if(ospath.isfile('key_folder.txt')):
+            with open('key_folder.txt', 'r') as f:
+                d = f.read().split(',')
+                f.close()
+            self.key = d[0]
+            self.datafolderpath = d[1]
+        else:
+            self.key = 'UV6KQA6735QZKBTV'
+            self.datafolderpath = './scriptdata'
+
         # get your key from https://www.alphavantage.co/support/#api-key
 
         # ts = TimeSeries(key, output_format='json')
@@ -104,7 +114,8 @@ class PortfolioManager:
 
         # Now create tkinter root object and the frame object on which we will place the other widgets
         self.root = Tk()
-        self.root.state('zoomed')    #this maximizes the app window
+        #self.root.state('zoomed')    #this maximizes the app window
+        self.root.state('normal')    #this maximizes the app window
         self.root.title('Stock Analytics - Online mode')
         self.content = ttk.Frame(self.root, padding=(5, 5, 12, 0))
         self.content.grid(column=0, row=0, sticky=(N, S, E, W))
@@ -143,8 +154,10 @@ class PortfolioManager:
         # add help menu
         self.help_menu=Menu(self.menu, tearoff=0)
         self.help_menu.add_command(label="Add Key & Data Folder", underline = 0, command=self.menuKeyDataFolder)
+        self.help_menu.add_separator()
         self.help_menu.add_command(label="Mode (Online/Offline)", underline = 0, command=self.menuSetTestMode)
         self.help_menu.add_command(label="Download Data", underline = 0, command=self.menuDownloadData)
+        self.help_menu.add_separator()
         self.menu.add_cascade(label='Help', underline = 0, menu=self.help_menu)
 
         # plot variable used to plot 9 standard graphs, enabled via right click menu
@@ -161,9 +174,9 @@ class PortfolioManager:
         #self.output_tree.bind('<<TreeviewSelect>>', self.TreeViewSelectionChanged)
 
         self.popup_menu_righclick = Menu(self.menu, tearoff=0)
-        self.popup_menu_righclick.add_command(label="Delete", underline = 0, command=self.menuDeleteSelectedScript)
+        """self.popup_menu_righclick.add_command(label="Delete", underline = 0, command=self.menuDeleteSelectedScript)
         self.popup_menu_righclick.add_command(label="Modify", underline = 0, command=self.menuModifySelectedScript)
-        self.popup_menu_righclick.add_separator()
+        self.popup_menu_righclick.add_separator()"""
         
         self.popup_menu_rightclick_performance = Menu(self.popup_menu_righclick, tearoff=0)
         self.popup_menu_rightclick_performance.add_command(label="Script-Show All", underline = 12, command=self.menuShowScriptPerformanceAllGraphs)
@@ -215,6 +228,10 @@ class PortfolioManager:
 
         self.popup_menu_righclick.add_command(label="Clear All Graphs", underline = 0, command=self.menuClearAllGraphs)
         #self.POSrightclickmenuBBands=13
+
+        self.popup_menu_righclick.add_separator()
+        self.popup_menu_righclick.add_command(label="Delete selected transaction", underline = 0, command=self.menuDeleteSelectedScript)
+        self.popup_menu_righclick.add_command(label="Modify selected transaction", underline = 0, command=self.menuModifySelectedScript)
 
         self.popup_ongraph = Menu(self.menu, tearoff=0)
         self.popup_ongraph.add_command(label="Detail Graph", command=self.OnDetailGraph)
@@ -438,7 +455,7 @@ class PortfolioManager:
 
     # command handler for stock quote button
     def menuGetStockQuote(self):
-        obj = classGetQuote(master=self.root, argoutputtree=self.output_tree, argIsTest=self.bool_test, argDataFolder=self.datafolderpath)
+        obj = classGetQuote(master=self.root, argkey=self.key, argoutputtree=self.output_tree, argIsTest=self.bool_test, argDataFolder=self.datafolderpath)
         obj.show()
         return;
 
@@ -1102,7 +1119,7 @@ class PortfolioManager:
                 self.ts = TimeSeries(self.key, output_format='pandas')
                 self.ti = TechIndicators(self.key, output_format='pandas')
             if(result_dict['folder'] != ''):
-                self.datafolder = result_dict['folder']
+                self.datafolderpath = result_dict['folder']
 
     def menuDownloadData(self):
         obj1 = classDownloadData(argKey=self.key)
