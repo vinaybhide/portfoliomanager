@@ -22,14 +22,15 @@ from testdata import *
 
 class PortfolioValuation(Toplevel):
     def __init__(self, master=None, argkey=None, argscript='None', argscripttree=None, 
-                argIsTest=False, argDataFolder='./scriptdata'):
+                argIsTest=False, argDataFolder=None):
         Toplevel.__init__(self, master=master)
         self.key = argkey
         self.script = argscript
         self.graphctr=1
         self.datafolderpath = argDataFolder
         
-        self.wm_state(newstate='zoomed') #maximize window, this works only for Win OS
+        #self.wm_state(newstate='zoomed') #maximize window, this works only for Win OS
+        self.wm_state(newstate='normal') #maximize window, this works only for Win OS
         self.wm_title("Portfolio valuation")
 
         self.wm_protocol("WM_DELETE_WINDOW", self.OnClose)

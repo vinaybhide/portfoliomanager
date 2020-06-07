@@ -21,9 +21,10 @@ from addnewmodifyscript import classAddNewModifyScript
 from testdata import *
 
 class classGetQuote(Toplevel):
-    def __init__(self, master=None, argkey='XXXX', argscript="", argoutputtree=None, argIsTest=False, argDataFolder='./scriptdata'):
+    def __init__(self, master=None, argkey=None, argscript="", argoutputtree=None, argIsTest=False, argDataFolder=None):
         Toplevel.__init__(self, master=master)
-        self.wm_state(newstate='zoomed')
+        #self.wm_state(newstate='zoomed')
+        self.wm_state(newstate='normal')
         #self.wm_resizable(width=False, height=False)
         self.key = argkey
         self.script = argscript

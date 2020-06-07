@@ -9,8 +9,9 @@ from alpha_vantage.timeseries import TimeSeries
 from alpha_vantage.techindicators import TechIndicators
 
 class PrepareTestData():
-    def __init__(self, argFolder='./scriptdata', argOutputSize='compact'):
+    def __init__(self, argFolder=None, argOutputSize='compact'):
         super().__init__()
+        #argFolder='./scriptdata'
         self.folder = argFolder + '/'
         self.outputsize = argOutputSize.lower()
     

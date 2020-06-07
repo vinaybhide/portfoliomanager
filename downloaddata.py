@@ -10,14 +10,14 @@ import pandas as pd
 from pandas import DataFrame
 
 class classDownloadData(Toplevel):
-    def __init__(self, master=None, argKey= 'XXXX', argFolder='./ScriptData', argMFdownloadFromDays=90, **kw):
+    def __init__(self, master=None, argKey= None, argFolder=None, argMFdownloadFromDays=90, **kw):
         super().__init__(master=master, **kw)
-
         self.wm_title("Download Data")
         self.wm_protocol("WM_DELETE_WINDOW", self.OnClose)
         #XXXX
         #UV6KQA6735QZKBTV
-        self.key = 'UV6KQA6735QZKBTV'
+        #self.key = 'UV6KQA6735QZKBTV'
+        self.key = argKey
         self.folder = argFolder
         self.outputsize='compact'
         self.configure(padx=5, pady=10)
@@ -425,5 +425,5 @@ class classDownloadData(Toplevel):
 
 
 if __name__ == "__main__":
-    obj1 = classDownloadData()
+    obj1 = classDownloadData(argKey='UV6KQA6735QZKBTV', argFolder='./ScriptData')
     input()

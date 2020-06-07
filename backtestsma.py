@@ -51,7 +51,8 @@ class BackTestSMA(Toplevel):
         self.graphctr=1
         self.datafolderpath = argDataFolder
 
-        self.wm_state(newstate='zoomed') #maximize window, this works only for Win OS
+        #self.wm_state(newstate='zoomed') #maximize window, this works only for Win OS
+        self.wm_state(newstate='normal') #maximize window, this works only for Win OS
         self.wm_title("Performance graphs: " + self.script)
 
         self.wm_protocol("WM_DELETE_WINDOW", self.OnClose)
