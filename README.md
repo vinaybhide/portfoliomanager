@@ -52,7 +52,6 @@
    5. Manage Portfolio->Portfolio Performace
       5.1 Opens a popup dialog
       5.2 Plots a graph for all scripts showing - Performance from the date of purchase to current date
-      
       # Research
     1. Research->Graphs
       1.1 Opens a popup dialog
@@ -62,7 +61,6 @@
       1.5 This overlaps the graphs you select, allowing you to do comparative research
       1.6 You can clear a specific graph or clear all graphs
       1.7 You can right click on any graph to select that graph
-      
       # Help
    1. Help->Add Key&Data Folder,
       1. Popus a dialog
